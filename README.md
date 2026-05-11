@@ -132,7 +132,7 @@ normalizeJaInput("090ー1234−5678")
 
 ## Live Demo
 
-- Demo → `https://normalize-ja-input.github.io`
+- Demo → `https://fusaihanabi.github.io/normalize-ja-input`
 - npm → `https://www.npmjs.com/package/normalize-ja-input`
 - GitHub → `https://github.com/fusaihanabi/normalize-ja-input`
 - Official → `https://dl.fusai-hanabi.com`
