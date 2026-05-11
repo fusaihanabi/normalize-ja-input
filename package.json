@@ -1,0 +1,42 @@
+{
+  "name": "normalize-ja-input",
+  "version": "0.1.0",
+  "description": "Tiny TypeScript utility for normalizing Japanese form input.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run test:run && npm run build"
+  },
+  "keywords": [
+    "japanese",
+    "normalize",
+    "normalizer",
+    "form",
+    "input",
+    "zenkaku",
+    "hankaku",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
