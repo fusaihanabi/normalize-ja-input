@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>normalize-ja-input - Japanese form input normalizer</title>
+    <meta
+      name="description"
+      content="normalize-ja-input is a tiny TypeScript utility for normalizing Japanese form input."
+    />
+    <link
+      href="https://unpkg.com/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --brand: #2563eb;
+        --brand-soft: #eff6ff;
+        --ink: #111827;
+      }
+
+      body {
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, #eff6ff 0, transparent 32rem),
+          linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      }
+
+      .navbar {
+        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .hero {
+        padding: 6rem 0 4rem;
+      }
+
+      .badge-soft {
+        color: var(--brand);
+        background: var(--brand-soft);
+        border: 1px solid #bfdbfe;
+      }
+
+      .code-card {
+        background: #0f172a;
+        color: #e5e7eb;
+        border-radius: 1rem;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+      }
+
+      code {
+        color: inherit;
+      }
+
+      .section {
+        padding: 4rem 0;
+      }
+
+      .feature-card,
+      .demo-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+      }
+
+      .demo-output {
+        min-height: 96px;
+        background: #0f172a;
+        color: #d1fae5;
+        border-radius: 0.75rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      .copy-btn {
+        white-space: nowrap;
+      }
+
+      .footer {
+        border-top: 1px solid #e5e7eb;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg sticky-top border-bottom">
+      <div class="container">
+        <a class="navbar-brand fw-bold" href="#">normalize-ja-input</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="#demo">Demo</a></li>
+            <li class="nav-item"><a class="nav-link" href="#install">Install</a></li>
+            <li class="nav-item"><a class="nav-link" href="#api">API</a></li>
+            <li class="nav-item"><a class="nav-link" href="#cdn">CDN</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+              <span class="badge badge-soft rounded-pill px-3 py-2 mb-3">Dependency-free tiny utility</span>
+              <h1 class="display-4 fw-bold lh-1 mb-4">
+                日本語フォーム入力の<br />表記ゆれを安全に正規化。
+              </h1>
+              <p class="lead text-secondary mb-4">
+                全角数字、全角英字、全角スペース、ハイフン類をフォーム入力向けに扱いやすく整える TypeScript utility です。
+              </p>
+              <div class="d-flex flex-wrap gap-2">
+                <a href="#install" class="btn btn-primary btn-lg">Get started</a>
+                <a href="#demo" class="btn btn-outline-secondary btn-lg">Try demo</a>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="code-card p-4">
+                <pre><code>import { normalizeJaInput } from "normalize-ja-input"
+
+normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
+// "TEL：090-1234-5678"</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="demo">
+        <div class="container">
+          <div class="row justify-content-center mb-4">
+            <div class="col-lg-8 text-center">
+              <h2 class="fw-bold">Live demo</h2>
+              <p class="text-secondary">日本語入力で混ざりがちな文字をその場で正規化します。</p>
+            </div>
+          </div>
+
+          <div class="demo-card p-4 p-lg-5">
+            <div class="row g-4">
+              <div class="col-lg-6">
+                <label for="demoInput" class="form-label fw-semibold">Input</label>
+                <textarea id="demoInput" class="form-control" rows="6">　ＴＥＬ：０９０ー１２３４ー５６７８　</textarea>
+
+                <div class="row g-3 mt-3">
+                  <div class="col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="trim" checked />
+                      <label class="form-check-label" for="trim">trim</label>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="collapseSpaces" checked />
+                      <label class="form-check-label" for="collapseSpaces">collapse spaces</label>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="spaces" checked />
+                      <label class="form-check-label" for="spaces">fullwidth spaces</label>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="digits" checked />
+                      <label class="form-check-label" for="digits">fullwidth digits</label>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="alphabets" checked />
+                      <label class="form-check-label" for="alphabets">fullwidth alphabets</label>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="hyphens" checked />
+                      <label class="form-check-label" for="hyphens">hyphen variants</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label fw-semibold mb-0">Output</label>
+                  <button class="btn btn-sm btn-outline-secondary copy-btn" id="copyOutput" type="button">Copy</button>
+                </div>
+                <div class="demo-output p-3" id="demoOutput"></div>
+
+                <div class="mt-4">
+                  <p class="fw-semibold mb-2">Try examples</p>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="　山田　太郎　">Name</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="０９０ー１２３４ー５６７８">Phone-like</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ＡＢＣ－１２３　ｔｅｓｔ">Mixed</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="container">
+          <div class="row g-4">
+            <div class="col-md-4">
+              <div class="feature-card h-100 p-4">
+                <h3 class="h5 fw-bold">Form focused</h3>
+                <p class="text-secondary mb-0">電話番号、氏名、住所、IDなどの入力前処理に使いやすい小さな設計。</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="feature-card h-100 p-4">
+                <h3 class="h5 fw-bold">Safe defaults</h3>
+                <p class="text-secondary mb-0">記号全般は勝手に変えず、v0.1では安全な正規化だけに限定。</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="feature-card h-100 p-4">
+                <h3 class="h5 fw-bold">Zero dependencies</h3>
+                <p class="text-secondary mb-0">Node.js、ブラウザ、フロントエンドフォームで扱いやすい依存ゼロ構成。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="install">
+        <div class="container">
+          <div class="row g-4 align-items-start">
+            <div class="col-lg-5">
+              <h2 class="fw-bold">Install</h2>
+              <p class="text-secondary">npmでインストールして、TypeScript/JavaScriptから利用できます。</p>
+            </div>
+            <div class="col-lg-7">
+              <div class="code-card p-4 mb-3">
+                <pre><code>npm install normalize-ja-input</code></pre>
+              </div>
+              <div class="code-card p-4">
+                <pre><code>import { normalizeJaInput } from "normalize-ja-input"
+
+const value = normalizeJaInput("　ＡＢＣー１２３　")
+// "ABC-123"</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="api">
+        <div class="container">
+          <div class="row g-4 align-items-start">
+            <div class="col-lg-5">
+              <h2 class="fw-bold">API</h2>
+              <p class="text-secondary">v0.1の公開APIはひとつだけです。</p>
+            </div>
+            <div class="col-lg-7">
+              <div class="code-card p-4">
+                <pre><code>normalizeJaInput(input: string, options?: {
+  trim?: boolean
+  collapseSpaces?: boolean
+  spaces?: "preserve" | "halfwidth"
+  digits?: "preserve" | "halfwidth"
+  alphabets?: "preserve" | "halfwidth"
+  hyphens?: "preserve" | "ascii"
+}): string</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="cdn">
+        <div class="container">
+          <div class="row g-4 align-items-start">
+            <div class="col-lg-5">
+              <h2 class="fw-bold">CDN</h2>
+              <p class="text-secondary">
+                npm公開後は unpkg や jsDelivr から読み込めます。ブラウザで直接使う場合は、UMD/IIFEビルドを追加すると便利です。
+              </p>
+            </div>
+            <div class="col-lg-7">
+              <div class="code-card p-4 mb-3">
+                <pre><code>&lt;script type="module"&gt;
+  import { normalizeJaInput } from "https://unpkg.com/normalize-ja-input/dist/index.js"
+
+  console.log(normalizeJaInput("　ＡＢＣー１２３　"))
+&lt;/script&gt;</code></pre>
+              </div>
+              <div class="code-card p-4">
+                <pre><code>&lt;!-- Optional future browser build --&gt;
+&lt;script src="https://unpkg.com/normalize-ja-input/dist/index.global.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  normalizeJaInput.normalizeJaInput("　ＡＢＣー１２３　")
+&lt;/script&gt;</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer py-4">
+      <div class="container d-flex flex-column flex-md-row justify-content-between gap-2 text-secondary small">
+        <div>MIT License</div>
+        <div><a href="https://dl.fusai-hanabi.com">dev.fusai-hanabi.com</a></div>
+        <div>Made for Japanese form input.</div>
+      </div>
+    </footer>
+
+    <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <script>
+      function normalizeJaInput(input, options = {}) {
+        const opts = {
+          trim: true,
+          collapseSpaces: true,
+          spaces: "halfwidth",
+          digits: "halfwidth",
+          alphabets: "halfwidth",
+          hyphens: "ascii",
+          ...options,
+        }
+
+        let value = input
+
+        if (opts.spaces === "halfwidth") {
+          value = value.replace(/\u3000/g, " ")
+        }
+
+        if (opts.digits === "halfwidth") {
+          value = value.replace(/[０-９]/g, char =>
+            String.fromCharCode(char.charCodeAt(0) - 0xfee0),
+          )
+        }
+
+        if (opts.alphabets === "halfwidth") {
+          value = value.replace(/[Ａ-Ｚａ-ｚ]/g, char =>
+            String.fromCharCode(char.charCodeAt(0) - 0xfee0),
+          )
+        }
+
+        if (opts.hyphens === "ascii") {
+          value = value.replace(/[ー－―‐-‒–—−﹣ｰ]/g, "-")
+        }
+
+        if (opts.collapseSpaces) {
+          value = value.replace(/[ \t\r\n]+/g, " ")
+        }
+
+        if (opts.trim) {
+          value = value.trim()
+        }
+
+        return value
+      }
+
+      const demoInput = document.getElementById("demoInput")
+      const demoOutput = document.getElementById("demoOutput")
+      const optionIds = ["trim", "collapseSpaces", "spaces", "digits", "alphabets", "hyphens"]
+
+      function getOptions() {
+        return {
+          trim: document.getElementById("trim").checked,
+          collapseSpaces: document.getElementById("collapseSpaces").checked,
+          spaces: document.getElementById("spaces").checked ? "halfwidth" : "preserve",
+          digits: document.getElementById("digits").checked ? "halfwidth" : "preserve",
+          alphabets: document.getElementById("alphabets").checked ? "halfwidth" : "preserve",
+          hyphens: document.getElementById("hyphens").checked ? "ascii" : "preserve",
+        }
+      }
+
+      function renderDemo() {
+        demoOutput.textContent = normalizeJaInput(demoInput.value, getOptions())
+      }
+
+      demoInput.addEventListener("input", renderDemo)
+      optionIds.forEach(id => document.getElementById(id).addEventListener("change", renderDemo))
+
+      document.querySelectorAll(".example").forEach(button => {
+        button.addEventListener("click", () => {
+          demoInput.value = button.dataset.value
+          renderDemo()
+        })
+      })
+
+      document.getElementById("copyOutput").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(demoOutput.textContent)
+        document.getElementById("copyOutput").textContent = "Copied"
+        setTimeout(() => {
+          document.getElementById("copyOutput").textContent = "Copy"
+        }, 1200)
+      })
+
+      renderDemo()
+    </script>
+  </body>
+</html>

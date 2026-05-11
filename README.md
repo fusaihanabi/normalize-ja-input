@@ -128,6 +128,17 @@ normalizeJaInput("090ー1234−5678")
 // => "090-1234-5678"
 ```
 
+---
+
+## Live Demo
+
+- Demo → `https://normalize-ja-input.github.io`
+- npm → `https://www.npmjs.com/package/normalize-ja-input`
+- GitHub → `https://github.com/fusaihanabi/normalize-ja-input`
+- Official → `https://dl.fusai-hanabi.com`
+
+---
+
 ## What this library does not do
 
 This library intentionally does not validate Japanese phone numbers, postal codes, addresses, or names.
