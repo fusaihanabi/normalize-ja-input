@@ -2,8 +2,8 @@ export type NormalizeJaInputOptions = {
   /** Trim leading and trailing whitespace after normalization. */
   trim?: boolean
 
-  /** Collapse consecutive ASCII whitespace into a single space. */
-  collapseSpaces?: boolean
+  /** Collapse ASCII whitespace, or only spaces and tabs with "horizontal". */
+  collapseSpaces?: boolean | "horizontal"
 
   /** Convert full-width spaces to half-width spaces. */
   spaces?: "preserve" | "halfwidth"
@@ -14,8 +14,8 @@ export type NormalizeJaInputOptions = {
   /** Convert full-width Latin alphabets to half-width alphabets. */
   alphabets?: "preserve" | "halfwidth"
 
-  /** Convert common Japanese hyphen-like characters to ASCII hyphen-minus. */
-  hyphens?: "preserve" | "ascii"
+  /** Convert hyphen variants everywhere or only between ASCII or full-width digits. */
+  hyphens?: "preserve" | "ascii" | "between-digits"
 }
 
 const DEFAULT_OPTIONS: Required<NormalizeJaInputOptions> = {
@@ -30,6 +30,7 @@ const DEFAULT_OPTIONS: Required<NormalizeJaInputOptions> = {
 const FULLWIDTH_DIGIT_OFFSET = 0xfee0
 const FULLWIDTH_ALPHABET_OFFSET = 0xfee0
 const HYPHEN_LIKE_CHARS = /[ー－―‐‑‒–—−﹣ｰ]/g
+const DIGIT = /[0-9０-９]/
 
 /**
  * Normalize common Japanese form input variations.
@@ -65,10 +66,17 @@ export function normalizeJaInput(
 
   if (opts.hyphens === "ascii") {
     value = value.replace(HYPHEN_LIKE_CHARS, "-")
+  } else if (opts.hyphens === "between-digits") {
+    value = value.replace(HYPHEN_LIKE_CHARS, (char, index: number, input: string) =>
+      DIGIT.test(input.charAt(index - 1)) && DIGIT.test(input.charAt(index + 1))
+        ? "-"
+        : char,
+    )
   }
 
   if (opts.collapseSpaces) {
-    value = value.replace(/[ \t\r\n]+/g, " ")
+    const whitespace = opts.collapseSpaces === "horizontal" ? /[ \t]+/g : /[ \t\r\n]+/g
+    value = value.replace(whitespace, " ")
   }
 
   if (opts.trim) {

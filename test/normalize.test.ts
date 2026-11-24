@@ -49,6 +49,17 @@ describe("normalizeJaInput", () => {
     )
   })
 
+  it("can normalize hyphen variants only between digits", () => {
+    const options = { hyphens: "between-digits" } as const
+    expect(normalizeJaInput("コーヒー", options)).toBe("コーヒー")
+    expect(normalizeJaInput("０９０ー１２３４−５６７８", options)).toBe("090-1234-5678")
+    expect(normalizeJaInput("コーヒー ０９０ー１２３４", options)).toBe("コーヒー 090-1234")
+    expect(normalizeJaInput("ーA－1ー Bー1 1ーA 1ーー2 1ー", options)).toBe(
+      "ーA－1ー Bー1 1ーA 1ーー2 1ー",
+    )
+    expect(normalizeJaInput("０ー9−２ｰ３", { ...options, digits: "preserve" })).toBe("０-9-２-３")
+  })
+
   it("can disable trim", () => {
     expect(normalizeJaInput(" 山田 ", { trim: false })).toBe(" 山田 ")
   })
@@ -57,5 +68,14 @@ describe("normalizeJaInput", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",
     )
+  })
+
+  it("can collapse horizontal whitespace while preserving line breaks", () => {
+    expect(normalizeJaInput("\n山田　 \t太郎\r\n東京都  港区\n", {
+      collapseSpaces: "horizontal",
+      trim: false,
+    })).toBe("\n山田 太郎\r\n東京都 港区\n")
+    expect(normalizeJaInput("\n山田\n太郎\n", { collapseSpaces: "horizontal" })).toBe("山田\n太郎")
+    expect(normalizeJaInput("山田\n太郎")).toBe("山田 太郎")
   })
 })

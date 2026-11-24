@@ -163,10 +163,6 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                       <label class="form-check-label" for="trim">trim</label>
                     </div>
                     <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="collapseSpaces" checked />
-                      <label class="form-check-label" for="collapseSpaces">collapse spaces</label>
-                    </div>
-                    <div class="form-check form-switch">
                       <input class="form-check-input" type="checkbox" id="spaces" checked />
                       <label class="form-check-label" for="spaces">fullwidth spaces</label>
                     </div>
@@ -180,10 +176,22 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                       <input class="form-check-input" type="checkbox" id="alphabets" checked />
                       <label class="form-check-label" for="alphabets">fullwidth alphabets</label>
                     </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="hyphens" checked />
-                      <label class="form-check-label" for="hyphens">hyphen variants</label>
-                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="collapseSpaces">Whitespace</label>
+                    <select class="form-select" id="collapseSpaces">
+                      <option value="true">Collapse spaces, tabs and line breaks</option>
+                      <option value="horizontal">Collapse spaces and tabs</option>
+                      <option value="false">Disable collapsing</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="hyphens">Hyphen variants</label>
+                    <select class="form-select" id="hyphens">
+                      <option value="ascii">Normalize everywhere</option>
+                      <option value="between-digits">Normalize between digits</option>
+                      <option value="preserve">Preserve</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -200,7 +208,8 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                   <div class="d-flex flex-wrap gap-2">
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="　山田　太郎　">Name</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="０９０ー１２３４ー５６７８">Phone-like</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ＡＢＣ－１２３　ｔｅｓｔ">Mixed</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="コーヒー　０９０ー１２３４">Mixed</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="東京都　　港区&#10;芝公園　　１丁目">Multiline</button>
                   </div>
                 </div>
               </div>
@@ -220,8 +229,8 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
             </div>
             <div class="col-md-4">
               <div class="feature-card h-100 p-4">
-                <h3 class="h5 fw-bold">Safe defaults</h3>
-                <p class="text-secondary mb-0">記号全般は勝手に変えず、v0.1では安全な正規化だけに限定。</p>
+                <h3 class="h5 fw-bold">Configurable</h3>
+                <p class="text-secondary mb-0">数字間のハイフンだけをそろえる設定や、改行を残す空白圧縮を選べます。</p>
               </div>
             </div>
             <div class="col-md-4">
@@ -261,17 +270,16 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
           <div class="row g-4 align-items-start">
             <div class="col-lg-5">
               <h2 class="fw-bold">API</h2>
-              <p class="text-secondary">v0.1の公開APIはひとつだけです。</p>
             </div>
             <div class="col-lg-7">
               <div class="code-card p-4">
                 <pre><code>normalizeJaInput(input: string, options?: {
   trim?: boolean
-  collapseSpaces?: boolean
+  collapseSpaces?: boolean | "horizontal"
   spaces?: "preserve" | "halfwidth"
   digits?: "preserve" | "halfwidth"
   alphabets?: "preserve" | "halfwidth"
-  hyphens?: "preserve" | "ascii"
+  hyphens?: "preserve" | "ascii" | "between-digits"
 }): string</code></pre>
               </div>
             </div>
@@ -285,22 +293,15 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
             <div class="col-lg-5">
               <h2 class="fw-bold">CDN</h2>
               <p class="text-secondary">
-                npm公開後は unpkg や jsDelivr から読み込めます。ブラウザで直接使う場合は、UMD/IIFEビルドを追加すると便利です。
+                npmで公開されたパッケージを、ブラウザからESモジュールとして読み込めます。
               </p>
             </div>
             <div class="col-lg-7">
-              <div class="code-card p-4 mb-3">
+              <div class="code-card p-4">
                 <pre><code>&lt;script type="module"&gt;
   import { normalizeJaInput } from "https://unpkg.com/normalize-ja-input/dist/index.js"
 
   console.log(normalizeJaInput("　ＡＢＣー１２３　"))
-&lt;/script&gt;</code></pre>
-              </div>
-              <div class="code-card p-4">
-                <pre><code>&lt;!-- Optional future browser build --&gt;
-&lt;script src="https://unpkg.com/normalize-ja-input/dist/index.global.js"&gt;&lt;/script&gt;
-&lt;script&gt;
-  normalizeJaInput.normalizeJaInput("　ＡＢＣー１２３　")
 &lt;/script&gt;</code></pre>
               </div>
             </div>
@@ -318,63 +319,22 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
     </footer>
 
     <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
-    <script>
-      function normalizeJaInput(input, options = {}) {
-        const opts = {
-          trim: true,
-          collapseSpaces: true,
-          spaces: "halfwidth",
-          digits: "halfwidth",
-          alphabets: "halfwidth",
-          hyphens: "ascii",
-          ...options,
-        }
-
-        let value = input
-
-        if (opts.spaces === "halfwidth") {
-          value = value.replace(/\u3000/g, " ")
-        }
-
-        if (opts.digits === "halfwidth") {
-          value = value.replace(/[０-９]/g, char =>
-            String.fromCharCode(char.charCodeAt(0) - 0xfee0),
-          )
-        }
-
-        if (opts.alphabets === "halfwidth") {
-          value = value.replace(/[Ａ-Ｚａ-ｚ]/g, char =>
-            String.fromCharCode(char.charCodeAt(0) - 0xfee0),
-          )
-        }
-
-        if (opts.hyphens === "ascii") {
-          value = value.replace(/[ー－―‐-‒–—−﹣ｰ]/g, "-")
-        }
-
-        if (opts.collapseSpaces) {
-          value = value.replace(/[ \t\r\n]+/g, " ")
-        }
-
-        if (opts.trim) {
-          value = value.trim()
-        }
-
-        return value
-      }
+    <script type="module">
+      import { normalizeJaInput } from "./index.js"
 
       const demoInput = document.getElementById("demoInput")
       const demoOutput = document.getElementById("demoOutput")
       const optionIds = ["trim", "collapseSpaces", "spaces", "digits", "alphabets", "hyphens"]
 
       function getOptions() {
+        const collapseSpaces = document.getElementById("collapseSpaces").value
         return {
           trim: document.getElementById("trim").checked,
-          collapseSpaces: document.getElementById("collapseSpaces").checked,
+          collapseSpaces: collapseSpaces === "horizontal" ? "horizontal" : collapseSpaces === "true",
           spaces: document.getElementById("spaces").checked ? "halfwidth" : "preserve",
           digits: document.getElementById("digits").checked ? "halfwidth" : "preserve",
           alphabets: document.getElementById("alphabets").checked ? "halfwidth" : "preserve",
-          hyphens: document.getElementById("hyphens").checked ? "ascii" : "preserve",
+          hyphens: document.getElementById("hyphens").value,
         }
       }
 
