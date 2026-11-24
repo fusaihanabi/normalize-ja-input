@@ -17,14 +17,18 @@ const runNode = (args, cwd = consumer) =>
   execFileSync(process.execPath, args, { cwd, encoding: "utf8" })
 
 try {
+  // A publish dry run still needs real artifacts inside this temporary consumer.
   const [{ filename }] = JSON.parse(runNode(
-    [npm, "pack", "--ignore-scripts", "--json", "--pack-destination", consumer, "--cache", cache],
+    [
+      npm, "pack", "--dry-run=false", "--ignore-scripts", "--json",
+      "--pack-destination", consumer, "--cache", cache,
+    ],
     root,
   ))
 
   writeFileSync(join(consumer, "package.json"), JSON.stringify({ private: true }))
   runNode([
-    npm, "install", "--ignore-scripts", "--offline", "--no-audit", "--no-fund",
+    npm, "install", "--dry-run=false", "--ignore-scripts", "--offline", "--no-audit", "--no-fund",
     "--no-package-lock", "--cache", cache, join(consumer, filename),
   ])
 
