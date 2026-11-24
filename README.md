@@ -19,6 +19,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 半角カタカナを必要に応じて全角に変換
+- 電話番号・フリガナ・メールアドレス・複数行の住所向けプリセット
 - 依存ゼロ
 - TypeScript対応
 
@@ -180,15 +181,34 @@ normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", {
 
 ## 入力欄ごとの設定例
 
-| 入力欄 | オプション | 入力 → 出力 |
-| --- | --- | --- |
-| 電話番号 | `{ hyphens: "between-digits" }` | `０９０ー１２３４` → `090-1234` |
-| 氏名 | `{ hyphens: "preserve" }` | `メアリー　山田` → `メアリー 山田` |
-| フリガナ | `{ katakana: "fullwidth", hyphens: "preserve" }` | `ﾔﾏﾀﾞ ﾒｱﾘｰ` → `ヤマダ メアリー` |
-| メールアドレス・ID | `{ punctuation: "ascii", hyphens: "preserve" }` | `ａ＿１＠ｅｘａｍｐｌｅ．ｊｐ` → `a_1@example.jp` |
-| 複数行の住所 | `{ collapseSpaces: "horizontal" }` | 各行のスペースやタブをまとめ、途中の改行を残す |
+名前付きエクスポートの `jaInputPresets` を `normalizeJaInput` の第2引数に渡せます。下表にないオプションには関数の既定値が使われます。
 
-メールアドレスや ID の妥当性は、変換後にフォーム側で確認してください。
+| 入力欄 | プリセットまたはオプション | 入力 → 出力 |
+| --- | --- | --- |
+| 電話番号 | `jaInputPresets.phone` | `０９０ー１２３４` → `090-1234` |
+| 氏名 | `{ hyphens: "preserve" }` | `メアリー　山田` → `メアリー 山田` |
+| フリガナ | `jaInputPresets.furigana` | `ﾔﾏﾀﾞ ﾒｱﾘｰ` → `ヤマダ メアリー` |
+| メールアドレス | `jaInputPresets.email` | `ａ＿１＠ｅｘａｍｐｌｅ．ｊｐ` → `a_1@example.jp` |
+| 複数行の住所 | `jaInputPresets.multilineAddress` | `東京都　　港区\nメゾン青山　１０１` → `東京都 港区\nメゾン青山 101` |
+
+`phone` は数字間のハイフン類をそろえます。`furigana` は半角カタカナを全角にし、長音符を残します。`email` は対象の全角記号を半角にし、前後の空白を取り除きます。途中の空白や改行、ハイフン類は保持します。`multilineAddress` は行内の空白をまとめつつ、途中の改行と建物名などの長音符を残します。
+
+プリセットは読み取り専用です。個別の入力欄で設定を変更するには、スプレッド構文で取り出してから上書きします。
+
+```ts
+import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
+
+normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana)
+// => "スーパー ヤマダ"
+
+normalizeJaInput("\n東京都　　港区\n芝公園　１丁目\n", {
+  ...jaInputPresets.multilineAddress,
+  trim: false,
+})
+// => "\n東京都 港区\n芝公園 1丁目\n"
+```
+
+電話番号やメールアドレスの妥当性は、変換後にフォーム側で確認してください。
 
 ---
 
@@ -202,6 +222,8 @@ normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", {
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 
 公開前の確認には `npm run test:package` を使います。ビルド後に `npm pack` のアーカイブを一時ディレクトリへインストールし、公開 API の読み込みと型解決を確認します。`npm publish` の公開前処理でも、この確認と単体テストが実行されます。
+
+`npm publish --dry-run --offline` も別途実行し、公開前処理がドライランでも配布テストを完了できることを確認します。
 
 ---
 

@@ -156,6 +156,17 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                 <label for="demoInput" class="form-label fw-semibold">Input</label>
                 <textarea id="demoInput" class="form-control" rows="6">　ＴＥＬ：０９０ー１２３４ー５６７８　</textarea>
 
+                <div class="mt-3">
+                  <label for="demoPreset" class="form-label fw-semibold">Preset</label>
+                  <select class="form-select" id="demoPreset">
+                    <option value="custom">Custom</option>
+                    <option value="phone">Phone</option>
+                    <option value="furigana">Furigana</option>
+                    <option value="email">Email</option>
+                    <option value="multilineAddress">Multiline address</option>
+                  </select>
+                </div>
+
                 <div class="row g-3 mt-3">
                   <div class="col-sm-6">
                     <div class="form-check form-switch">
@@ -283,7 +294,12 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
             </div>
             <div class="col-lg-7">
               <div class="code-card p-4">
-                <pre><code>normalizeJaInput(input: string, options?: {
+                <pre><code>import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
+
+normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana)
+// "スーパー ヤマダ"
+
+normalizeJaInput(input: string, options?: {
   trim?: boolean
   collapseSpaces?: boolean | "horizontal"
   spaces?: "preserve" | "halfwidth"
@@ -332,34 +348,58 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
 
     <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
     <script type="module">
-      import { normalizeJaInput } from "./index.js"
+      import { jaInputPresets, normalizeJaInput } from "./index.js"
 
       const demoInput = document.getElementById("demoInput")
       const demoOutput = document.getElementById("demoOutput")
-      const optionIds = [
-        "trim", "collapseSpaces", "spaces", "digits", "alphabets", "katakana", "hyphens", "punctuation",
-      ]
+      const demoPreset = document.getElementById("demoPreset")
+      const collapseSpaces = document.getElementById("collapseSpaces")
+      const hyphens = document.getElementById("hyphens")
+      const checkboxOptions = [
+        ["trim", false, true],
+        ["spaces", "preserve", "halfwidth"],
+        ["digits", "preserve", "halfwidth"],
+        ["alphabets", "preserve", "halfwidth"],
+        ["katakana", "preserve", "fullwidth"],
+        ["punctuation", "preserve", "ascii"],
+      ].map(([id, unchecked, checked]) => [document.getElementById(id), unchecked, checked])
 
       function getOptions() {
-        const collapseSpaces = document.getElementById("collapseSpaces").value
-        return {
-          trim: document.getElementById("trim").checked,
-          collapseSpaces: collapseSpaces === "horizontal" ? "horizontal" : collapseSpaces === "true",
-          spaces: document.getElementById("spaces").checked ? "halfwidth" : "preserve",
-          digits: document.getElementById("digits").checked ? "halfwidth" : "preserve",
-          alphabets: document.getElementById("alphabets").checked ? "halfwidth" : "preserve",
-          katakana: document.getElementById("katakana").checked ? "fullwidth" : "preserve",
-          hyphens: document.getElementById("hyphens").value,
-          punctuation: document.getElementById("punctuation").checked ? "ascii" : "preserve",
+        const whitespace = collapseSpaces.value
+        const options = {
+          collapseSpaces: whitespace === "horizontal" ? "horizontal" : whitespace === "true",
+          hyphens: hyphens.value,
         }
+        for (const [control, unchecked, checked] of checkboxOptions) {
+          options[control.id] = control.checked ? checked : unchecked
+        }
+        return options
       }
+
+      const defaultOptions = getOptions()
 
       function renderDemo() {
         demoOutput.textContent = normalizeJaInput(demoInput.value, getOptions())
       }
 
       demoInput.addEventListener("input", renderDemo)
-      optionIds.forEach(id => document.getElementById(id).addEventListener("change", renderDemo))
+      demoPreset.addEventListener("change", () => {
+        if (demoPreset.value === "custom") return
+
+        const options = { ...defaultOptions, ...jaInputPresets[demoPreset.value] }
+        for (const [control, , checked] of checkboxOptions) {
+          control.checked = options[control.id] === checked
+        }
+        collapseSpaces.value = String(options.collapseSpaces)
+        hyphens.value = options.hyphens
+        renderDemo()
+      })
+
+      const optionControls = [...checkboxOptions.map(([control]) => control), collapseSpaces, hyphens]
+      optionControls.forEach(control => control.addEventListener("change", () => {
+        demoPreset.value = "custom"
+        renderDemo()
+      }))
 
       document.querySelectorAll(".example").forEach(button => {
         button.addEventListener("click", () => {

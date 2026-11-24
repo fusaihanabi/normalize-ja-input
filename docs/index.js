@@ -1,3 +1,15 @@
+/** Read-only option overrides for common form fields. */
+export const jaInputPresets = Object.freeze({
+    phone: Object.freeze({ hyphens: "between-digits" }),
+    furigana: Object.freeze({ katakana: "fullwidth", hyphens: "preserve" }),
+    email: Object.freeze({
+        punctuation: "ascii",
+        hyphens: "preserve",
+        spaces: "preserve",
+        collapseSpaces: false,
+    }),
+    multilineAddress: Object.freeze({ collapseSpaces: "horizontal", hyphens: "preserve" }),
+});
 const DEFAULT_OPTIONS = {
     trim: true,
     collapseSpaces: true,

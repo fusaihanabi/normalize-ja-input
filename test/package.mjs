@@ -34,20 +34,27 @@ try {
 
   writeFileSync(join(consumer, "runtime.mjs"), `
 import assert from "node:assert/strict"
-import { normalizeJaInput } from "normalize-ja-input"
+import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
 
 assert.equal(normalizeJaInput("ﾔﾏﾀﾞ"), "ﾔﾏﾀﾞ")
 assert.equal(normalizeJaInput("ｽｰﾊﾟｰ", { katakana: "fullwidth", hyphens: "preserve" }), "スーパー")
+assert.equal(normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana), "スーパー ヤマダ")
 `)
   runNode(["runtime.mjs"])
 
   writeFileSync(join(consumer, "types.mts"), `
-import { normalizeJaInput, type NormalizeJaInputOptions } from "normalize-ja-input"
+import { jaInputPresets, normalizeJaInput, type NormalizeJaInputOptions } from "normalize-ja-input"
 
 const options: NormalizeJaInputOptions = { katakana: "fullwidth" }
 const normalized: string = normalizeJaInput("ﾊﾟﾝ", options)
 // @ts-expect-error The public option only accepts "preserve" and "fullwidth".
 normalizeJaInput("ﾊﾟﾝ", { katakana: "halfwidth" })
+normalizeJaInput("０９０ー１２３４", jaInputPresets.phone)
+normalizeJaInput("　東京都　港区　", { ...jaInputPresets.multilineAddress, trim: false })
+// @ts-expect-error The preset registry is read-only.
+jaInputPresets.phone = jaInputPresets.phone
+// @ts-expect-error The preset options are read-only.
+jaInputPresets.phone.hyphens = "between-digits"
 `)
   runNode([
     tsc, "--noEmit", "--strict", "--module", "NodeNext",

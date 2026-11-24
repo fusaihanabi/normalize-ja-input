@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { normalizeJaInput } from "../src/index"
+import { jaInputPresets, normalizeJaInput } from "../src/index"
 
 describe("normalizeJaInput", () => {
   it("trims and normalizes full-width spaces", () => {
@@ -131,5 +131,44 @@ describe("normalizeJaInput", () => {
     })).toBe("\n山田 太郎\r\n東京都 港区\n")
     expect(normalizeJaInput("\n山田\n太郎\n", { collapseSpaces: "horizontal" })).toBe("山田\n太郎")
     expect(normalizeJaInput("山田\n太郎")).toBe("山田 太郎")
+  })
+})
+
+describe("jaInputPresets", () => {
+  it("normalizes phone separators between digits and preserves other long marks", () => {
+    expect(normalizeJaInput("コーヒー ０９０ー１２３４−５６７８", jaInputPresets.phone)).toBe(
+      "コーヒー 090-1234-5678",
+    )
+  })
+
+  it("normalizes furigana and keeps the long vowel marks", () => {
+    expect(normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana)).toBe("スーパー ヤマダ")
+  })
+
+  it("normalizes email punctuation and preserves interior whitespace and hyphens", () => {
+    expect(normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", jaInputPresets.email)).toBe(
+      "test+1@example.jp",
+    )
+    expect(normalizeJaInput("　Ａ－Ｂ　 \n＠ｅｘａｍｐｌｅ．ｊｐ　", jaInputPresets.email)).toBe(
+      "A－B　 \n@example.jp",
+    )
+  })
+
+  it("normalizes multiline addresses and supports overriding individual options", () => {
+    const input = "\n東京都　　港区\nメゾン青山　１０１\n"
+    expect(normalizeJaInput(input, jaInputPresets.multilineAddress)).toBe(
+      "東京都 港区\nメゾン青山 101",
+    )
+    expect(normalizeJaInput(input, { ...jaInputPresets.multilineAddress, trim: false })).toBe(
+      "\n東京都 港区\nメゾン青山 101\n",
+    )
+    expect(normalizeJaInput(input)).toBe("東京都 港区 メゾン青山 101")
+  })
+
+  it("freezes the preset registry and every option object", () => {
+    expect(Object.isFrozen(jaInputPresets)).toBe(true)
+    for (const options of Object.values(jaInputPresets)) {
+      expect(Object.isFrozen(options)).toBe(true)
+    }
   })
 })
