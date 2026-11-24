@@ -4,10 +4,12 @@ const DEFAULT_OPTIONS = {
     spaces: "halfwidth",
     digits: "halfwidth",
     alphabets: "halfwidth",
+    katakana: "preserve",
     hyphens: "ascii",
     punctuation: "preserve",
 };
 const FULLWIDTH_ASCII_OFFSET = 0xfee0;
+const HALFWIDTH_KATAKANA = /[ｦ-ﾝ][ﾞﾟ]?/g;
 const HYPHEN_LIKE_CHARS = /[ー－―‐‑‒–—−﹣ｰ]/g;
 const DIGIT = /[0-9０-９]/;
 /**
@@ -30,6 +32,13 @@ export function normalizeJaInput(input, options = {}) {
     }
     if (opts.alphabets === "halfwidth") {
         value = value.replace(/[Ａ-Ｚａ-ｚ]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
+    }
+    if (opts.katakana === "fullwidth") {
+        value = value.replace(HALFWIDTH_KATAKANA, kana => {
+            const normalized = kana.normalize("NFKC");
+            // Preserve the original mark if it cannot combine into a single kana.
+            return normalized.length === 1 ? normalized : kana[0].normalize("NFKC") + kana[1];
+        });
     }
     if (opts.hyphens === "ascii") {
         value = value.replace(HYPHEN_LIKE_CHARS, "-");

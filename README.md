@@ -18,6 +18,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 日本語入力で混ざりがちなハイフン類を `-` に統一
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
+- 半角カタカナを必要に応じて全角に変換
 - 依存ゼロ
 - TypeScript対応
 
@@ -54,6 +55,7 @@ normalizeJaInput(input, {
   spaces: "halfwidth",
   digits: "halfwidth",
   alphabets: "halfwidth",
+  katakana: "preserve",
   hyphens: "ascii",
   punctuation: "preserve",
 })
@@ -123,6 +125,24 @@ normalizeJaInput("ＡＢＣｘｙｚ")
 // => "ABCxyz"
 ```
 
+### `katakana`
+
+Type: `"preserve" | "fullwidth"`
+
+Default: `"preserve"`
+
+`"fullwidth"` は `ﾔﾏﾀﾞ` を `ヤマダ` に、`ﾊﾟﾝ` を `パン` に変換します。濁点・半濁点が単独で現れる場合や、`ｱﾞ` のように直前の文字と1文字にまとまらない場合は、記号を半角のまま残します。半角の句読点や中点も保持します。
+
+長音符はカタカナの変換後に `hyphens` の設定に従います。フリガナや商品名で長音符を残すには `hyphens: "preserve"` を併用します。
+
+```ts
+normalizeJaInput("　ｽｰﾊﾟｰ　ﾔﾏﾀﾞ　", {
+  katakana: "fullwidth",
+  hyphens: "preserve",
+})
+// => "スーパー ヤマダ"
+```
+
 ### `hyphens`
 
 Type: `"preserve" | "ascii" | "between-digits"`
@@ -164,6 +184,7 @@ normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", {
 | --- | --- | --- |
 | 電話番号 | `{ hyphens: "between-digits" }` | `０９０ー１２３４` → `090-1234` |
 | 氏名 | `{ hyphens: "preserve" }` | `メアリー　山田` → `メアリー 山田` |
+| フリガナ | `{ katakana: "fullwidth", hyphens: "preserve" }` | `ﾔﾏﾀﾞ ﾒｱﾘｰ` → `ヤマダ メアリー` |
 | メールアドレス・ID | `{ punctuation: "ascii", hyphens: "preserve" }` | `ａ＿１＠ｅｘａｍｐｌｅ．ｊｐ` → `a_1@example.jp` |
 | 複数行の住所 | `{ collapseSpaces: "horizontal" }` | 各行のスペースやタブをまとめ、途中の改行を残す |
 
@@ -179,6 +200,8 @@ normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", {
 - Official → `https://dl.fusai-hanabi.com`
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
+
+公開前の確認には `npm run test:package` を使います。ビルド後に `npm pack` のアーカイブを一時ディレクトリへインストールし、公開 API の読み込みと型解決を確認します。`npm publish` の公開前処理でも、この確認と単体テストが実行されます。
 
 ---
 

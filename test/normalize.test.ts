@@ -87,6 +87,37 @@ describe("normalizeJaInput", () => {
     })).toBe("090-1234@コーヒー")
   })
 
+  it("preserves half-width katakana by default or when explicitly requested", () => {
+    expect(normalizeJaInput("ﾔﾏﾀﾞ")).toBe("ﾔﾏﾀﾞ")
+    expect(normalizeJaInput("ｽｰﾊﾟｰ", { katakana: "preserve" })).toBe("ｽ-ﾊﾟ-")
+    expect(normalizeJaInput("ｽｰﾊﾟｰ", { katakana: "preserve", hyphens: "preserve" })).toBe(
+      "ｽｰﾊﾟｰ",
+    )
+  })
+
+  it("converts half-width katakana and composes valid voicing marks", () => {
+    const options = { katakana: "fullwidth" } as const
+    expect(normalizeJaInput("ﾔﾏﾀﾞ ﾊﾟﾝ ｶﾀカナ ｳﾞ", options)).toBe("ヤマダ パン カタカナ ヴ")
+    expect(normalizeJaInput("｢ｶﾅ･ﾊﾟﾝ｡｣､", options)).toBe("｢カナ･パン｡｣､")
+  })
+
+  it("preserves standalone or uncombinable half-width voicing marks", () => {
+    const options = { katakana: "fullwidth" } as const
+    expect(normalizeJaInput("ﾞﾟ ｱﾞ ｶﾟ カﾞ ﾊﾟﾞ", options)).toBe("ﾞﾟ アﾞ カﾟ カﾞ パﾞ")
+  })
+
+  it("applies each hyphen policy after converting half-width katakana", () => {
+    const options = { katakana: "fullwidth" } as const
+    const input = "ｽｰﾊﾟｰ ０９０ｰ１２３４"
+    expect(normalizeJaInput(input, options)).toBe("ス-パ- 090-1234")
+    expect(normalizeJaInput(input, { ...options, hyphens: "preserve" })).toBe(
+      "スーパー 090ー1234",
+    )
+    expect(normalizeJaInput(input, { ...options, hyphens: "between-digits" })).toBe(
+      "スーパー 090-1234",
+    )
+  })
+
   it("can disable space collapsing", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",

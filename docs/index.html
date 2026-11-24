@@ -166,6 +166,10 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                       <input class="form-check-input" type="checkbox" id="spaces" checked />
                       <label class="form-check-label" for="spaces">fullwidth spaces</label>
                     </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="katakana" />
+                      <label class="form-check-label" for="katakana">fullwidth katakana</label>
+                    </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="form-check form-switch">
@@ -215,6 +219,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="コーヒー　０９０ー１２３４">Mixed</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="東京都　　港区&#10;芝公園　　１丁目">Multiline</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ">Email</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｽｰﾊﾟｰ　ﾔﾏﾀﾞ">Katakana</button>
                   </div>
                 </div>
               </div>
@@ -284,6 +289,7 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
   spaces?: "preserve" | "halfwidth"
   digits?: "preserve" | "halfwidth"
   alphabets?: "preserve" | "halfwidth"
+  katakana?: "preserve" | "fullwidth"
   hyphens?: "preserve" | "ascii" | "between-digits"
   punctuation?: "preserve" | "ascii"
 }): string</code></pre>
@@ -330,7 +336,9 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
 
       const demoInput = document.getElementById("demoInput")
       const demoOutput = document.getElementById("demoOutput")
-      const optionIds = ["trim", "collapseSpaces", "spaces", "digits", "alphabets", "hyphens", "punctuation"]
+      const optionIds = [
+        "trim", "collapseSpaces", "spaces", "digits", "alphabets", "katakana", "hyphens", "punctuation",
+      ]
 
       function getOptions() {
         const collapseSpaces = document.getElementById("collapseSpaces").value
@@ -340,6 +348,7 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
           spaces: document.getElementById("spaces").checked ? "halfwidth" : "preserve",
           digits: document.getElementById("digits").checked ? "halfwidth" : "preserve",
           alphabets: document.getElementById("alphabets").checked ? "halfwidth" : "preserve",
+          katakana: document.getElementById("katakana").checked ? "fullwidth" : "preserve",
           hyphens: document.getElementById("hyphens").value,
           punctuation: document.getElementById("punctuation").checked ? "ascii" : "preserve",
         }

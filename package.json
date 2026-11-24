@@ -1,6 +1,6 @@
 {
   "name": "normalize-ja-input",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Tiny TypeScript utility for normalizing Japanese form input.",
   "type": "module",
   "exports": {
@@ -21,8 +21,9 @@
     "build:demo": "tsc --outDir docs --declaration false --declarationMap false --sourceMap false",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:package": "npm run build && node test/package.mjs",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run test:run && npm run build"
+    "prepublishOnly": "npm run test:run && npm run test:package"
   },
   "keywords": [
     "japanese",
