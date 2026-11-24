@@ -64,6 +64,29 @@ describe("normalizeJaInput", () => {
     expect(normalizeJaInput(" 山田 ", { trim: false })).toBe(" 山田 ")
   })
 
+  it("preserves punctuation by default or when explicitly requested", () => {
+    expect(normalizeJaInput("＠．＿＋")).toBe("＠．＿＋")
+    expect(normalizeJaInput("＠．＿＋", { punctuation: "preserve" })).toBe("＠．＿＋")
+  })
+
+  it("converts only the supported punctuation when requested", () => {
+    const options = { punctuation: "ascii" } as const
+    expect(normalizeJaInput("＠．＿＋：／。", options)).toBe("@._+：／。")
+    expect(normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", options)).toBe(
+      "test+1@example.jp",
+    )
+  })
+
+  it("normalizes punctuation independently of hyphens", () => {
+    expect(normalizeJaInput("Ａ＿Ｂ－１", { punctuation: "ascii", hyphens: "preserve" })).toBe(
+      "A_B－1",
+    )
+    expect(normalizeJaInput("０９０ー１２３４＠コーヒー", {
+      punctuation: "ascii",
+      hyphens: "between-digits",
+    })).toBe("090-1234@コーヒー")
+  })
+
   it("can disable space collapsing", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",

@@ -5,9 +5,9 @@ const DEFAULT_OPTIONS = {
     digits: "halfwidth",
     alphabets: "halfwidth",
     hyphens: "ascii",
+    punctuation: "preserve",
 };
-const FULLWIDTH_DIGIT_OFFSET = 0xfee0;
-const FULLWIDTH_ALPHABET_OFFSET = 0xfee0;
+const FULLWIDTH_ASCII_OFFSET = 0xfee0;
 const HYPHEN_LIKE_CHARS = /[ー－―‐‑‒–—−﹣ｰ]/g;
 const DIGIT = /[0-9０-９]/;
 /**
@@ -26,10 +26,10 @@ export function normalizeJaInput(input, options = {}) {
         value = value.replace(/\u3000/g, " ");
     }
     if (opts.digits === "halfwidth") {
-        value = value.replace(/[０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_DIGIT_OFFSET));
+        value = value.replace(/[０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
     }
     if (opts.alphabets === "halfwidth") {
-        value = value.replace(/[Ａ-Ｚａ-ｚ]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ALPHABET_OFFSET));
+        value = value.replace(/[Ａ-Ｚａ-ｚ]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
     }
     if (opts.hyphens === "ascii") {
         value = value.replace(HYPHEN_LIKE_CHARS, "-");
@@ -38,6 +38,9 @@ export function normalizeJaInput(input, options = {}) {
         value = value.replace(HYPHEN_LIKE_CHARS, (char, index, input) => DIGIT.test(input.charAt(index - 1)) && DIGIT.test(input.charAt(index + 1))
             ? "-"
             : char);
+    }
+    if (opts.punctuation === "ascii") {
+        value = value.replace(/[＠．＿＋]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
     }
     if (opts.collapseSpaces) {
         const whitespace = opts.collapseSpaces === "horizontal" ? /[ \t]+/g : /[ \t\r\n]+/g;

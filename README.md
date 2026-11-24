@@ -17,6 +17,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 連続する空白を1つに正規化
 - 日本語入力で混ざりがちなハイフン類を `-` に統一
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
+- `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 依存ゼロ
 - TypeScript対応
 
@@ -54,6 +55,7 @@ normalizeJaInput(input, {
   digits: "halfwidth",
   alphabets: "halfwidth",
   hyphens: "ascii",
+  punctuation: "preserve",
 })
 ```
 
@@ -139,6 +141,33 @@ normalizeJaInput("コーヒー ０９０ー１２３４", { hyphens: "between-di
 normalizeJaInput("０９０ー１２３４", { hyphens: "between-digits", digits: "preserve" })
 // => "０９０-１２３４"
 ```
+
+### `punctuation`
+
+Type: `"preserve" | "ascii"`
+
+Default: `"preserve"`
+
+`"ascii"` は `＠`、`．`、`＿`、`＋` をそれぞれ `@`、`.`、`_`、`+` にします。`"preserve"` ではこれらの文字をそのまま残します。ハイフン類の変換は `hyphens` で設定します。
+
+```ts
+normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", {
+  punctuation: "ascii",
+  hyphens: "preserve",
+})
+// => "test+1@example.jp"
+```
+
+## 入力欄ごとの設定例
+
+| 入力欄 | オプション | 入力 → 出力 |
+| --- | --- | --- |
+| 電話番号 | `{ hyphens: "between-digits" }` | `０９０ー１２３４` → `090-1234` |
+| 氏名 | `{ hyphens: "preserve" }` | `メアリー　山田` → `メアリー 山田` |
+| メールアドレス・ID | `{ punctuation: "ascii", hyphens: "preserve" }` | `ａ＿１＠ｅｘａｍｐｌｅ．ｊｐ` → `a_1@example.jp` |
+| 複数行の住所 | `{ collapseSpaces: "horizontal" }` | 各行のスペースやタブをまとめ、途中の改行を残す |
+
+メールアドレスや ID の妥当性は、変換後にフォーム側で確認してください。
 
 ---
 
