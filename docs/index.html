@@ -212,6 +212,14 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                       <option value="preserve">Preserve</option>
                     </select>
                   </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="kanaScript">Kana script</label>
+                    <select class="form-select" id="kanaScript">
+                      <option value="preserve">Preserve</option>
+                      <option value="hiragana">Hiragana</option>
+                      <option value="katakana">Katakana</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -231,6 +239,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="東京都　　港区&#10;芝公園　　１丁目">Multiline</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ">Email</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｽｰﾊﾟｰ　ﾔﾏﾀﾞ">Katakana</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="やまだ　タロウ　ﾊﾅｺ">Mixed kana</button>
                   </div>
                 </div>
               </div>
@@ -296,8 +305,11 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
               <div class="code-card p-4">
                 <pre><code>import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
 
-normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana)
-// "スーパー ヤマダ"
+normalizeJaInput("やまだ　ﾀﾛｳ", {
+  ...jaInputPresets.furigana,
+  kanaScript: "katakana",
+})
+// "ヤマダ タロウ"
 
 normalizeJaInput(input: string, options?: {
   trim?: boolean
@@ -306,6 +318,7 @@ normalizeJaInput(input: string, options?: {
   digits?: "preserve" | "halfwidth"
   alphabets?: "preserve" | "halfwidth"
   katakana?: "preserve" | "fullwidth"
+  kanaScript?: "preserve" | "hiragana" | "katakana"
   hyphens?: "preserve" | "ascii" | "between-digits"
   punctuation?: "preserve" | "ascii"
 }): string</code></pre>
@@ -355,6 +368,7 @@ normalizeJaInput(input: string, options?: {
       const demoPreset = document.getElementById("demoPreset")
       const collapseSpaces = document.getElementById("collapseSpaces")
       const hyphens = document.getElementById("hyphens")
+      const kanaScript = document.getElementById("kanaScript")
       const checkboxOptions = [
         ["trim", false, true],
         ["spaces", "preserve", "halfwidth"],
@@ -369,6 +383,7 @@ normalizeJaInput(input: string, options?: {
         const options = {
           collapseSpaces: whitespace === "horizontal" ? "horizontal" : whitespace === "true",
           hyphens: hyphens.value,
+          kanaScript: kanaScript.value,
         }
         for (const [control, unchecked, checked] of checkboxOptions) {
           options[control.id] = control.checked ? checked : unchecked
@@ -392,10 +407,13 @@ normalizeJaInput(input: string, options?: {
         }
         collapseSpaces.value = String(options.collapseSpaces)
         hyphens.value = options.hyphens
+        kanaScript.value = options.kanaScript
         renderDemo()
       })
 
-      const optionControls = [...checkboxOptions.map(([control]) => control), collapseSpaces, hyphens]
+      const optionControls = [
+        ...checkboxOptions.map(([control]) => control), collapseSpaces, hyphens, kanaScript,
+      ]
       optionControls.forEach(control => control.addEventListener("change", () => {
         demoPreset.value = "custom"
         renderDemo()

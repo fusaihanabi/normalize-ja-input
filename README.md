@@ -19,6 +19,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 半角カタカナを必要に応じて全角に変換
+- フリガナなどの文字種をひらがなかカタカナに統一
 - 電話番号・フリガナ・メールアドレス・複数行の住所向けプリセット
 - 依存ゼロ
 - TypeScript対応
@@ -57,6 +58,7 @@ normalizeJaInput(input, {
   digits: "halfwidth",
   alphabets: "halfwidth",
   katakana: "preserve",
+  kanaScript: "preserve",
   hyphens: "ascii",
   punctuation: "preserve",
 })
@@ -142,6 +144,28 @@ normalizeJaInput("　ｽｰﾊﾟｰ　ﾔﾏﾀﾞ　", {
   hyphens: "preserve",
 })
 // => "スーパー ヤマダ"
+```
+
+### `kanaScript`
+
+Type: `"preserve" | "hiragana" | "katakana"`
+
+Default: `"preserve"`
+
+`"hiragana"` は全角カタカナをひらがなに、`"katakana"` はひらがなを全角カタカナにそろえます。`"preserve"` はかなの文字種をそのまま残します。
+
+対象は `ぁ`〜`ゖ` と `ァ`〜`ヶ` の対応する文字、および繰り返し記号の `ゝ`・`ゞ` と `ヽ`・`ヾ` です。小書き文字や濁音・半濁音も変換します。`ヷ` など対応するひらがながない文字や、漢字・中点は保持します。濁点・半濁点がかな本体と別の文字で入力されている場合は、かな本体だけを変換し、記号を残します。
+
+半角カタカナが混ざる場合は `katakana: "fullwidth"` を併用すると、全角化してから文字種をそろえます。長音符にはその後で `hyphens` の設定が適用されます。`jaInputPresets.furigana` には全角化と長音符の保持が含まれています。
+
+```ts
+import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
+
+normalizeJaInput("やまだ　ﾀﾛｳ", { ...jaInputPresets.furigana, kanaScript: "katakana" })
+// => "ヤマダ タロウ"
+
+normalizeJaInput("ヤマダ　ﾀﾛｳ", { ...jaInputPresets.furigana, kanaScript: "hiragana" })
+// => "やまだ たろう"
 ```
 
 ### `hyphens`

@@ -1,6 +1,6 @@
 {
   "name": "normalize-ja-input",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Tiny TypeScript utility for normalizing Japanese form input.",
   "type": "module",
   "exports": {

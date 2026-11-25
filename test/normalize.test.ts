@@ -118,6 +118,46 @@ describe("normalizeJaInput", () => {
     )
   })
 
+  it("preserves the kana script by default and when explicitly requested", () => {
+    const input = "やまだ　タロウ　ﾊﾅｺ"
+    const expected = "やまだ タロウ ﾊﾅｺ"
+    expect(normalizeJaInput(input)).toBe(expected)
+    expect(normalizeJaInput(input, { kanaScript: "preserve" })).toBe(expected)
+    expect(normalizeJaInput(input, jaInputPresets.furigana)).toBe("やまだ タロウ ハナコ")
+  })
+
+  it("converts hiragana and katakana with matching characters in both directions", () => {
+    const hiragana = "ぁゖ がっこう ぱん ゔ ゝゞ"
+    const katakana = "ァヶ ガッコウ パン ヴ ヽヾ"
+    expect(normalizeJaInput(hiragana, { kanaScript: "katakana" })).toBe(katakana)
+    expect(normalizeJaInput(katakana, { kanaScript: "hiragana" })).toBe(hiragana)
+  })
+
+  it("preserves unmatched characters and converts only the base of decomposed kana", () => {
+    const unchanged = "ヷヸヹヺ ゟヿ 漢字・ ﾊﾟ"
+    expect(normalizeJaInput(`カ\u3099ハ\u309a ${unchanged}`, { kanaScript: "hiragana" })).toBe(
+      `か\u3099は\u309a ${unchanged}`,
+    )
+    expect(normalizeJaInput(`か\u3099は\u309a ${unchanged}`, { kanaScript: "katakana" })).toBe(
+      `カ\u3099ハ\u309a ${unchanged}`,
+    )
+  })
+
+  it("applies kana script conversion after width conversion and before hyphen handling", () => {
+    expect(normalizeJaInput("やまだ　ﾀﾛｳ", {
+      ...jaInputPresets.furigana,
+      kanaScript: "katakana",
+    })).toBe("ヤマダ タロウ")
+
+    const input = "ｽｰﾊﾟｰ ０９０ｰ１２３４"
+    const options = { katakana: "fullwidth", kanaScript: "hiragana" } as const
+    expect(normalizeJaInput(input, options)).toBe("す-ぱ- 090-1234")
+    expect(normalizeJaInput(input, { ...options, hyphens: "preserve" })).toBe("すーぱー 090ー1234")
+    expect(normalizeJaInput(input, { ...options, hyphens: "between-digits" })).toBe(
+      "すーぱー 090-1234",
+    )
+  })
+
   it("can disable space collapsing", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",

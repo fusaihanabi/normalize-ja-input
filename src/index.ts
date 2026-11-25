@@ -17,6 +17,9 @@ export type NormalizeJaInputOptions = {
   /** Convert half-width katakana to full-width katakana. */
   katakana?: "preserve" | "fullwidth"
 
+  /** Convert characters with counterparts in the other kana script. */
+  kanaScript?: "preserve" | "hiragana" | "katakana"
+
   /** Convert hyphen variants everywhere or only between ASCII or full-width digits. */
   hyphens?: "preserve" | "ascii" | "between-digits"
 
@@ -44,12 +47,14 @@ const DEFAULT_OPTIONS: Required<NormalizeJaInputOptions> = {
   digits: "halfwidth",
   alphabets: "halfwidth",
   katakana: "preserve",
+  kanaScript: "preserve",
   hyphens: "ascii",
   punctuation: "preserve",
 }
 
 const FULLWIDTH_ASCII_OFFSET = 0xfee0
 const HALFWIDTH_KATAKANA = /[ｦ-ﾝ][ﾞﾟ]?/g
+const KANA_SCRIPT_OFFSET = 0x60
 const HYPHEN_LIKE_CHARS = /[ー－―‐‑‒–—−﹣ｰ]/g
 const DIGIT = /[0-9０-９]/
 
@@ -91,6 +96,16 @@ export function normalizeJaInput(
       // Preserve the original mark if it cannot combine into a single kana.
       return normalized.length === 1 ? normalized : kana[0].normalize("NFKC") + kana[1]
     })
+  }
+
+  if (opts.kanaScript === "katakana") {
+    value = value.replace(/[ぁ-ゖゝゞ]/g, kana =>
+      String.fromCharCode(kana.charCodeAt(0) + KANA_SCRIPT_OFFSET),
+    )
+  } else if (opts.kanaScript === "hiragana") {
+    value = value.replace(/[ァ-ヶヽヾ]/g, kana =>
+      String.fromCharCode(kana.charCodeAt(0) - KANA_SCRIPT_OFFSET),
+    )
   }
 
   if (opts.hyphens === "ascii") {
