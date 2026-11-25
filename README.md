@@ -51,28 +51,50 @@ normalizeJaInput("090ー1234−5678")
 // => "090-1234-5678"
 ```
 
-## Options
+## 公開 API
 
 ```ts
-normalizeJaInput(input, {
-  trim: true,
-  lineEndings: "preserve",
-  collapseSpaces: true,
-  spaces: "halfwidth",
-  digits: "halfwidth",
-  alphabets: "halfwidth",
-  katakana: "preserve",
-  kanaScript: "preserve",
-  kanaMarks: "preserve",
-  hyphens: "ascii",
-  punctuation: "preserve",
-})
+import {
+  jaInputPresets,
+  normalizeJaInput,
+  type NormalizeJaInputOptions,
+} from "normalize-ja-input"
+
+const options: NormalizeJaInputOptions = { ...jaInputPresets.furigana, kanaScript: "katakana" }
+normalizeJaInput("やまだ　ﾀﾛｳ", options)
+// => "ヤマダ タロウ"
 ```
+
+| エクスポート | 用途 |
+| --- | --- |
+| `normalizeJaInput(input, options?)` | 文字列を受け取り、整形後の文字列を返します。 |
+| `NormalizeJaInputOptions` | 第2引数の型です。各項目は省略できます。 |
+| `jaInputPresets` | 入力欄ごとの読み取り専用オプションです。 |
+
+パッケージは ESM 形式で、TypeScript の型定義を同梱しています。
+
+## オプションの既定値と処理順
+
+| 順序 | オプション | 既定値 |
+| --- | --- | --- |
+| 1 | [`spaces`](#spaces) | `"halfwidth"` |
+| 2 | [`digits`](#digits) | `"halfwidth"` |
+| 3 | [`alphabets`](#alphabets) | `"halfwidth"` |
+| 4 | [`katakana`](#katakana) | `"preserve"` |
+| 5 | [`kanaMarks`](#kanamarks) | `"preserve"` |
+| 6 | [`kanaScript`](#kanascript) | `"preserve"` |
+| 7 | `kanaMarks` の再適用 | — |
+| 8 | [`hyphens`](#hyphens) | `"ascii"` |
+| 9 | [`punctuation`](#punctuation) | `"preserve"` |
+| 10 | [`lineEndings`](#lineendings) | `"preserve"` |
+| 11 | [`collapseSpaces`](#collapsespaces) | `true` |
+| 12 | [`trim`](#trim) | `true` |
+
+手順7は、濁点・半濁点の結合と文字種変換の両方を有効にした場合に実行します。
 
 ### `trim`
 
-Type: `boolean`  
-Default: `true`
+Type: `boolean`
 
 前後の空白を削除します。
 
@@ -84,8 +106,6 @@ normalizeJaInput(" 山田 ")
 ### `lineEndings`
 
 Type: `"preserve" | "lf"`
-
-Default: `"preserve"`
 
 `"lf"` は `\r\n` と単独の `\r` をそれぞれ `\n` ひとつに変換します。既存の `\n` は変換対象に含まれません。`"preserve"` はこの処理を省略します。
 
@@ -103,8 +123,6 @@ normalizeJaInput("東京都　港区\r\n\r\n芝公園　１丁目\r１０１号�
 
 Type: `boolean | "horizontal"`
 
-Default: `true`
-
 `true` は半角スペース、タブ、改行の並びを半角スペース1つにします。単独のタブや改行も半角スペースになります。`"horizontal"` は半角スペースとタブだけをまとめ、途中の改行を残します。前後の改行も残すには `trim: false` を指定してください。`false` はこの処理を無効にします。
 
 ```ts
@@ -118,8 +136,6 @@ normalizeJaInput("東京都　　港区\n芝公園  １丁目", { collapseSpaces
 ### `spaces`
 
 Type: `"preserve" | "halfwidth" | "ascii"`
-
-Default: `"halfwidth"`
 
 | 値 | 半角スペースに変換する文字 |
 | --- | --- |
@@ -142,8 +158,7 @@ normalizeJaInput("山田\u00A0\u202F太郎", { spaces: "ascii", collapseSpaces: 
 
 ### `digits`
 
-Type: `"preserve" | "halfwidth"`  
-Default: `"halfwidth"`
+Type: `"preserve" | "halfwidth"`
 
 全角数字を半角数字にします。
 
@@ -154,8 +169,7 @@ normalizeJaInput("１２３")
 
 ### `alphabets`
 
-Type: `"preserve" | "halfwidth"`  
-Default: `"halfwidth"`
+Type: `"preserve" | "halfwidth"`
 
 全角英字を半角英字にします。
 
@@ -167,8 +181,6 @@ normalizeJaInput("ＡＢＣｘｙｚ")
 ### `katakana`
 
 Type: `"preserve" | "fullwidth"`
-
-Default: `"preserve"`
 
 `"fullwidth"` は `ﾔﾏﾀﾞ` を `ヤマダ` に、`ﾊﾟﾝ` を `パン` に変換します。濁点・半濁点が単独で現れる場合や、`ｱﾞ` のように直前の文字と1文字にまとまらない場合は、記号を半角のまま残します。半角の句読点や中点も保持します。
 
@@ -185,8 +197,6 @@ normalizeJaInput("　ｽｰﾊﾟｰ　ﾔﾏﾀﾞ　", {
 ### `kanaScript`
 
 Type: `"preserve" | "hiragana" | "katakana"`
-
-Default: `"preserve"`
 
 `"hiragana"` は全角カタカナをひらがなに、`"katakana"` はひらがなを全角カタカナにそろえます。`"preserve"` はかなの文字種をそのまま残します。
 
@@ -208,8 +218,6 @@ normalizeJaInput("ヤマダ　ﾀﾛｳ", { ...jaInputPresets.furigana, kanaScri
 
 Type: `"preserve" | "compose"`
 
-Default: `"preserve"`
-
 `"compose"` は、かなの直後にある結合用濁点（`U+3099`）または結合用半濁点（`U+309A`）を、対応する1文字にまとめます。単独の記号、1文字にまとまらない組み合わせ、独立した記号の `゛`・`゜` は保持します。半角の濁点・半濁点は `katakana` の設定で扱います。`"preserve"` はこの結合処理を省略します。
 
 半角カタカナの全角化後、`kanaScript` による文字種の変換前に結合します。変換後に新しく結合できる組み合わせも1文字にまとめ、その後に `hyphens` を適用します。
@@ -229,13 +237,17 @@ normalizeJaInput("あ\u3099", { kanaMarks: "compose" })
 
 Type: `"preserve" | "ascii" | "between-digits"`
 
-Default: `"ascii"`
-
 `"ascii"` は長音符 `ー` を含むハイフン類を ASCII の `-` に統一します。`"between-digits"` は対象の記号の直前と直後がどちらも半角または全角の数字の場合にだけ変換します。`"preserve"` はハイフン類をそのまま残します。
 
 ```ts
 normalizeJaInput("090ー1234−5678")
 // => "090-1234-5678"
+
+normalizeJaInput("コーヒー")
+// => "コ-ヒ-"
+
+normalizeJaInput("コーヒー", { hyphens: "preserve" })
+// => "コーヒー"
 
 normalizeJaInput("コーヒー ０９０ー１２３４", { hyphens: "between-digits" })
 // => "コーヒー 090-1234"
@@ -247,8 +259,6 @@ normalizeJaInput("０９０ー１２３４", { hyphens: "between-digits", digits
 ### `punctuation`
 
 Type: `"preserve" | "ascii"`
-
-Default: `"preserve"`
 
 `"ascii"` は `＠`、`．`、`＿`、`＋` をそれぞれ `@`、`.`、`_`、`+` にします。`"preserve"` ではこれらの文字をそのまま残します。ハイフン類の変換は `hyphens` で設定します。
 
@@ -263,6 +273,13 @@ normalizeJaInput("　ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ　", {
 ## 入力欄ごとの設定例
 
 名前付きエクスポートの `jaInputPresets` を `normalizeJaInput` の第2引数に渡せます。下表にないオプションには関数の既定値が使われます。
+
+| プリセット | 上書きする設定 |
+| --- | --- |
+| `phone` | `hyphens: "between-digits"` |
+| `furigana` | `katakana: "fullwidth"`、`hyphens: "preserve"` |
+| `email` | `punctuation: "ascii"`、`hyphens: "preserve"`、`spaces: "preserve"`、`collapseSpaces: false` |
+| `multilineAddress` | `collapseSpaces: "horizontal"`、`hyphens: "preserve"` |
 
 | 入力欄 | プリセットまたはオプション | 入力 → 出力 |
 | --- | --- | --- |
@@ -281,6 +298,9 @@ import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
 
 normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana)
 // => "スーパー ヤマダ"
+
+normalizeJaInput("Ａ　Ｂ＠ｅｘａｍｐｌｅ．ｊｐ", jaInputPresets.email)
+// => "A　B@example.jp"
 
 normalizeJaInput("\n東京都　　港区\n芝公園　１丁目\n", {
   ...jaInputPresets.multilineAddress,
@@ -314,9 +334,25 @@ normalizeJaInput("東京都\u00A0港区\n芝公園\u202F１丁目", {
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 
-公開前の確認には `npm run test:package` を使います。ビルド後に `npm pack` のアーカイブを一時ディレクトリへインストールし、公開 API の読み込みと型解決を確認します。`npm publish` の公開前処理でも、この確認と単体テストが実行されます。
+## リリース確認
 
-`npm publish --dry-run --offline` も別途実行し、公開前処理がドライランでも配布テストを完了できることを確認します。
+GitHub Actions では、Windows と Ubuntu で Node.js 22・24・26 を検証します。[Release checks](.github/workflows/check.yml)
+
+1.0.0 のローカル検証では、Windows の Node.js 22.22.0・24.22.3・26.13.1 で、型チェック、単体テスト、配布テスト、公開ドライランを確認しました。
+
+手元でも同じ確認を実行できます。
+
+```sh
+npm ci
+npm run typecheck
+npm run test:run
+npm run test:package
+npm publish --dry-run --offline
+```
+
+`test:package` は `npm pack` で作ったアーカイブを一時ディレクトリへインストールし、パッケージ名からの ESM の読み込みと型解決を確認します。ドライランでは、`npm publish` の公開前処理で配布テストまで完了することを確認します。
+
+ブラウザでデモを確認するときは、プリセットから `Custom` への切り替え、空白のコードポイント表示、混在する改行の LF への変換を試します。コピーした出力を入力欄に貼り付け、途中の空行も含めて元の出力と一致することを確認します。
 
 ---
 

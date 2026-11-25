@@ -37,6 +37,9 @@ import assert from "node:assert/strict"
 import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
 
 assert.equal(normalizeJaInput("ﾔﾏﾀﾞ"), "ﾔﾏﾀﾞ")
+assert.equal(normalizeJaInput("コーヒー"), "コ-ヒ-")
+assert.equal(normalizeJaInput("０９０ー１２３４", jaInputPresets.phone), "090-1234")
+assert.equal(normalizeJaInput("Ａ　Ｂ＠ｅｘａｍｐｌｅ．ｊｐ", jaInputPresets.email), "A　B@example.jp")
 assert.equal(normalizeJaInput("ｽｰﾊﾟｰ", { katakana: "fullwidth", hyphens: "preserve" }), "スーパー")
 assert.equal(normalizeJaInput("ｽｰﾊﾟｰ　ﾔﾏﾀﾞ", jaInputPresets.furigana), "スーパー ヤマダ")
 assert.equal(

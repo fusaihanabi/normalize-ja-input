@@ -441,6 +441,7 @@ normalizeJaInput(input: string, options?: {
 
       const defaultOptions = getOptions()
       let exampleInput
+      let normalizedOutput = ""
 
       function describeLineEndings(value) {
         return (value.match(/\r\n?|\n/g) ?? [])
@@ -451,13 +452,15 @@ normalizeJaInput(input: string, options?: {
       function renderDemo() {
         const input = exampleInput ?? demoInput.value
         const output = normalizeJaInput(input, getOptions())
-        demoOutput.textContent = output
+        normalizedOutput = output
+        // Render standalone CR as a line break while preserving the original clipboard text.
+        demoOutput.textContent = output.replace(/\r\n?/g, "\n")
         demoCodePoints.textContent = `${Array.from(input).length} → ${Array.from(output).length}`
         const labeledInput = input.replace(/[\u3000\u00a0\u202f]/g, space => {
           const codePoint = space.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")
           return `[U+${codePoint}]`
         })
-        demoSpaceLabels.textContent = labeledInput
+        demoSpaceLabels.textContent = labeledInput.replace(/\r\n?/g, "\n")
         demoSpacePreview.hidden = labeledInput === input
         const inputEndings = describeLineEndings(input)
         const outputEndings = describeLineEndings(output)
@@ -514,7 +517,7 @@ normalizeJaInput(input: string, options?: {
       })
 
       document.getElementById("copyOutput").addEventListener("click", async () => {
-        await navigator.clipboard.writeText(demoOutput.textContent)
+        await navigator.clipboard.writeText(normalizedOutput)
         document.getElementById("copyOutput").textContent = "Copied"
         setTimeout(() => {
           document.getElementById("copyOutput").textContent = "Copy"
