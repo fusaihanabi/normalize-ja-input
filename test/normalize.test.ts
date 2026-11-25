@@ -226,6 +226,26 @@ describe("normalizeJaInput", () => {
     expect(normalizeJaInput(normalized, options)).toBe(normalized)
   })
 
+  it("normalizes mixed line endings while keeping empty lines and other separators", () => {
+    const input = "山田\r\n\r\n太郎\r港区\n東京都\u2028芝公園\u2029日本"
+    expect(normalizeJaInput(input, { lineEndings: "lf", collapseSpaces: false })).toBe(
+      "山田\n\n太郎\n港区\n東京都\u2028芝公園\u2029日本",
+    )
+  })
+
+  it("uses the existing whitespace settings after normalizing line endings", () => {
+    const input = "\r\n山田\r\n\r太郎\r"
+    expect(normalizeJaInput(input, { lineEndings: "lf" })).toBe("山田 太郎")
+    expect(normalizeJaInput(input, { lineEndings: "lf", collapseSpaces: "horizontal" })).toBe(
+      "山田\n\n太郎",
+    )
+    expect(normalizeJaInput(input, {
+      lineEndings: "lf",
+      collapseSpaces: "horizontal",
+      trim: false,
+    })).toBe("\n山田\n\n太郎\n")
+  })
+
   it("can disable space collapsing", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",
@@ -282,6 +302,20 @@ describe("jaInputPresets", () => {
       ...jaInputPresets.multilineAddress,
       spaces: "ascii",
     })).toBe("東京都 港区\r\n芝公園 1丁目")
+  })
+
+  it("preserves address line endings unless LF conversion is requested", () => {
+    const input = "東京都　港区\r\n\r\n芝公園　１丁目\r１０１号室\n受付"
+    const preserved = "東京都 港区\r\n\r\n芝公園 1丁目\r101号室\n受付"
+    expect(normalizeJaInput(input, jaInputPresets.multilineAddress)).toBe(preserved)
+    expect(normalizeJaInput(input, {
+      ...jaInputPresets.multilineAddress,
+      lineEndings: "preserve",
+    })).toBe(preserved)
+    expect(normalizeJaInput(input, {
+      ...jaInputPresets.multilineAddress,
+      lineEndings: "lf",
+    })).toBe("東京都 港区\n\n芝公園 1丁目\n101号室\n受付")
   })
 
   it("freezes the preset registry and every option object", () => {

@@ -12,6 +12,7 @@ export const jaInputPresets = Object.freeze({
 });
 const DEFAULT_OPTIONS = {
     trim: true,
+    lineEndings: "preserve",
     collapseSpaces: true,
     spaces: "halfwidth",
     digits: "halfwidth",
@@ -89,6 +90,9 @@ export function normalizeJaInput(input, options = {}) {
     }
     if (opts.punctuation === "ascii") {
         value = value.replace(/[＠．＿＋]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
+    }
+    if (opts.lineEndings === "lf") {
+        value = value.replace(/\r\n?/g, "\n");
     }
     if (opts.collapseSpaces) {
         const whitespace = opts.collapseSpaces === "horizontal" ? /[ \t]+/g : /[ \t\r\n]+/g;

@@ -18,6 +18,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 連続する空白を1つに正規化
 - 日本語入力で混ざりがちなハイフン類を `-` に統一
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
+- CRLF と単独の CR を必要に応じて LF に統一
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 半角カタカナを必要に応じて全角に変換
 - フリガナなどの文字種をひらがなかカタカナに統一
@@ -55,6 +56,7 @@ normalizeJaInput("090ー1234−5678")
 ```ts
 normalizeJaInput(input, {
   trim: true,
+  lineEndings: "preserve",
   collapseSpaces: true,
   spaces: "halfwidth",
   digits: "halfwidth",
@@ -77,6 +79,24 @@ Default: `true`
 ```ts
 normalizeJaInput(" 山田 ")
 // => "山田"
+```
+
+### `lineEndings`
+
+Type: `"preserve" | "lf"`
+
+Default: `"preserve"`
+
+`"lf"` は `\r\n` と単独の `\r` をそれぞれ `\n` ひとつに変換します。既存の `\n` は変換対象に含まれません。`"preserve"` はこの処理を省略します。
+
+変換後に `collapseSpaces` を適用します。`"horizontal"` なら途中の改行や空行を残し、`true` なら改行も空白にまとめます。前後の改行も残す場合は `trim: false` を指定してください。
+
+```ts
+normalizeJaInput("東京都　港区\r\n\r\n芝公園　１丁目\r１０１号室", {
+  ...jaInputPresets.multilineAddress,
+  lineEndings: "lf",
+})
+// => "東京都 港区\n\n芝公園 1丁目\n101号室"
 ```
 
 ### `collapseSpaces`
@@ -289,6 +309,8 @@ normalizeJaInput("東京都\u00A0港区\n芝公園\u202F１丁目", {
 デモでは入力と出力のコードポイント数を確認できます。「Combining mark」の例で結合をオンにすると、見た目が同じ `がく` のコードポイント数が3から2になります。
 
 「Mixed spaces」の例では、入力欄の下に3種類の空白がコードポイント付きで表示されます。「Space conversion」で「Fullwidth + no-break spaces」を選ぶと、3種類とも半角スペースに変換されます。
+
+「Mixed line endings」の例を選ぶと、複数行住所のプリセットが適用され、入力と出力の改行コードが `\r\n`・`\r`・`\n` の表記で表示されます。「Line endings」を「Normalize to LF」に切り替えると、出力の改行が `\n` にそろいます。
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 

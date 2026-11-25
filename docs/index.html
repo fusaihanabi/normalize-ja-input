@@ -215,6 +215,13 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     </select>
                   </div>
                   <div class="col-sm-6">
+                    <label class="form-label" for="lineEndings">Line endings</label>
+                    <select class="form-select" id="lineEndings">
+                      <option value="preserve">Preserve</option>
+                      <option value="lf">Normalize to LF</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6">
                     <label class="form-label" for="collapseSpaces">Whitespace collapsing</label>
                     <select class="form-select" id="collapseSpaces">
                       <option value="true">Collapse spaces, tabs and line breaks</option>
@@ -250,6 +257,11 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                 <p class="small text-secondary mt-2 mb-0">
                   Code points (input → output) <span id="demoCodePoints"></span>
                 </p>
+                <div id="demoLineEndings" class="small text-secondary mt-2" hidden>
+                  <div class="fw-semibold">Line endings</div>
+                  <div>Input <code id="demoInputEndings"></code></div>
+                  <div>Output <code id="demoOutputEndings"></code></div>
+                </div>
 
                 <div class="mt-4">
                   <p class="fw-semibold mb-2">Try examples</p>
@@ -263,6 +275,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="やまだ　タロウ　ﾊﾅｺ">Mixed kana</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="か&#x3099;く">Combining mark</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="山田&#x3000;&#x00A0;&#x202F;太郎">Mixed spaces</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="東京都　港区&#13;&#10;&#13;&#10;芝公園　１丁目&#13;１０１号室&#10;受付">Mixed line endings</button>
                   </div>
                 </div>
               </div>
@@ -336,6 +349,7 @@ normalizeJaInput("やまだ　ﾀﾛｳ", {
 
 normalizeJaInput(input: string, options?: {
   trim?: boolean
+  lineEndings?: "preserve" | "lf"
   collapseSpaces?: boolean | "horizontal"
   spaces?: "preserve" | "halfwidth" | "ascii"
   digits?: "preserve" | "halfwidth"
@@ -392,8 +406,12 @@ normalizeJaInput(input: string, options?: {
       const demoCodePoints = document.getElementById("demoCodePoints")
       const demoSpacePreview = document.getElementById("demoSpacePreview")
       const demoSpaceLabels = document.getElementById("demoSpaceLabels")
+      const demoLineEndings = document.getElementById("demoLineEndings")
+      const demoInputEndings = document.getElementById("demoInputEndings")
+      const demoOutputEndings = document.getElementById("demoOutputEndings")
       const demoPreset = document.getElementById("demoPreset")
       const spaces = document.getElementById("spaces")
+      const lineEndings = document.getElementById("lineEndings")
       const collapseSpaces = document.getElementById("collapseSpaces")
       const hyphens = document.getElementById("hyphens")
       const kanaScript = document.getElementById("kanaScript")
@@ -411,6 +429,7 @@ normalizeJaInput(input: string, options?: {
         const options = {
           collapseSpaces: whitespace === "horizontal" ? "horizontal" : whitespace === "true",
           spaces: spaces.value,
+          lineEndings: lineEndings.value,
           hyphens: hyphens.value,
           kanaScript: kanaScript.value,
         }
@@ -421,9 +440,16 @@ normalizeJaInput(input: string, options?: {
       }
 
       const defaultOptions = getOptions()
+      let exampleInput
+
+      function describeLineEndings(value) {
+        return (value.match(/\r\n?|\n/g) ?? [])
+          .map(ending => ending.replace("\r", "\\r").replace("\n", "\\n"))
+          .join(" ")
+      }
 
       function renderDemo() {
-        const input = demoInput.value
+        const input = exampleInput ?? demoInput.value
         const output = normalizeJaInput(input, getOptions())
         demoOutput.textContent = output
         demoCodePoints.textContent = `${Array.from(input).length} → ${Array.from(output).length}`
@@ -433,25 +459,40 @@ normalizeJaInput(input: string, options?: {
         })
         demoSpaceLabels.textContent = labeledInput
         demoSpacePreview.hidden = labeledInput === input
+        const inputEndings = describeLineEndings(input)
+        const outputEndings = describeLineEndings(output)
+        demoInputEndings.textContent = inputEndings || "None"
+        demoOutputEndings.textContent = outputEndings || "None"
+        demoLineEndings.hidden = !inputEndings && !outputEndings
       }
 
-      demoInput.addEventListener("input", renderDemo)
-      demoPreset.addEventListener("change", () => {
-        if (demoPreset.value === "custom") return
-
-        const options = { ...defaultOptions, ...jaInputPresets[demoPreset.value] }
+      function applyPreset(name) {
+        const options = { ...defaultOptions, ...jaInputPresets[name] }
         for (const [control, , checked] of checkboxOptions) {
           control.checked = options[control.id] === checked
         }
         collapseSpaces.value = String(options.collapseSpaces)
         spaces.value = options.spaces
+        lineEndings.value = options.lineEndings
         hyphens.value = options.hyphens
         kanaScript.value = options.kanaScript
+      }
+
+      demoInput.addEventListener("input", () => {
+        exampleInput = undefined
+        renderDemo()
+      })
+
+      demoPreset.addEventListener("change", () => {
+        if (demoPreset.value === "custom") return
+
+        applyPreset(demoPreset.value)
         renderDemo()
       })
 
       const optionControls = [
-        ...checkboxOptions.map(([control]) => control), spaces, collapseSpaces, hyphens, kanaScript,
+        ...checkboxOptions.map(([control]) => control),
+        spaces, lineEndings, collapseSpaces, hyphens, kanaScript,
       ]
       optionControls.forEach(control => control.addEventListener("change", () => {
         demoPreset.value = "custom"
@@ -460,7 +501,14 @@ normalizeJaInput(input: string, options?: {
 
       document.querySelectorAll(".example").forEach(button => {
         button.addEventListener("click", () => {
-          demoInput.value = button.dataset.value
+          const { value, preset } = button.dataset
+          // Keep the sample's original line endings even when the textarea changes them.
+          exampleInput = value
+          demoInput.value = value
+          if (preset) {
+            demoPreset.value = preset
+            applyPreset(preset)
+          }
           renderDemo()
         })
       })

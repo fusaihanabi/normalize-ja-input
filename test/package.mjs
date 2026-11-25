@@ -50,6 +50,13 @@ assert.equal(
   "ヷ",
 )
 assert.equal(normalizeJaInput("山田\\u00a0\\u202f太郎", { spaces: "ascii" }), "山田 太郎")
+assert.equal(
+  normalizeJaInput("港区\\r\\n\\r芝公園\\n受付", {
+    ...jaInputPresets.multilineAddress,
+    lineEndings: "lf",
+  }),
+  "港区\\n\\n芝公園\\n受付",
+)
 `)
   runNode(["runtime.mjs"])
 
@@ -76,6 +83,10 @@ normalizeJaInput("山田", { spaces: "halfwidth" })
 normalizeJaInput("山田", { spaces: "ascii" })
 // @ts-expect-error Space conversion accepts only the documented values.
 normalizeJaInput("山田", { spaces: "fullwidth" })
+normalizeJaInput("山田", { lineEndings: "preserve" })
+normalizeJaInput("山田", { lineEndings: "lf" })
+// @ts-expect-error Line ending conversion accepts only the documented values.
+normalizeJaInput("山田", { lineEndings: "crlf" })
 // @ts-expect-error The preset registry is read-only.
 jaInputPresets.phone = jaInputPresets.phone
 // @ts-expect-error The preset options are read-only.
