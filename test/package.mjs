@@ -44,6 +44,11 @@ assert.equal(
   "ヤマダ タロウ",
 )
 assert.equal(normalizeJaInput("ヤマダ", { kanaScript: "hiragana" }), "やまだ")
+assert.equal(normalizeJaInput("か\\u3099く", { kanaMarks: "compose" }), "がく")
+assert.equal(
+  normalizeJaInput("わ\\u3099", { kanaScript: "katakana", kanaMarks: "compose" }),
+  "ヷ",
+)
 `)
   runNode(["runtime.mjs"])
 
@@ -61,6 +66,10 @@ normalizeJaInput("ヤマダ", { kanaScript: "hiragana" })
 normalizeJaInput("ﾔﾏﾀﾞ", { ...jaInputPresets.furigana, kanaScript: "katakana" })
 // @ts-expect-error Kana script accepts only the documented values.
 normalizeJaInput("やまだ", { kanaScript: "fullwidth" })
+normalizeJaInput("か", { kanaMarks: "preserve" })
+normalizeJaInput("か", { kanaMarks: "compose" })
+// @ts-expect-error Kana marks accept only the documented values.
+normalizeJaInput("か", { kanaMarks: "nfc" })
 // @ts-expect-error The preset registry is read-only.
 jaInputPresets.phone = jaInputPresets.phone
 // @ts-expect-error The preset options are read-only.

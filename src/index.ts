@@ -20,6 +20,9 @@ export type NormalizeJaInputOptions = {
   /** Convert characters with counterparts in the other kana script. */
   kanaScript?: "preserve" | "hiragana" | "katakana"
 
+  /** Compose kana with a following combining voicing mark when possible. */
+  kanaMarks?: "preserve" | "compose"
+
   /** Convert hyphen variants everywhere or only between ASCII or full-width digits. */
   hyphens?: "preserve" | "ascii" | "between-digits"
 
@@ -48,6 +51,7 @@ const DEFAULT_OPTIONS: Required<NormalizeJaInputOptions> = {
   alphabets: "halfwidth",
   katakana: "preserve",
   kanaScript: "preserve",
+  kanaMarks: "preserve",
   hyphens: "ascii",
   punctuation: "preserve",
 }
@@ -55,8 +59,16 @@ const DEFAULT_OPTIONS: Required<NormalizeJaInputOptions> = {
 const FULLWIDTH_ASCII_OFFSET = 0xfee0
 const HALFWIDTH_KATAKANA = /[ｦ-ﾝ][ﾞﾟ]?/g
 const KANA_SCRIPT_OFFSET = 0x60
+const KANA_WITH_COMBINING_MARK = /[ぁ-ゖゝゞァ-ヺヽヾ][\u3099\u309a]/g
 const HYPHEN_LIKE_CHARS = /[ー－―‐‑‒–—−﹣ｰ]/g
 const DIGIT = /[0-9０-９]/
+
+function composeKanaMarks(value: string): string {
+  return value.replace(KANA_WITH_COMBINING_MARK, pair => {
+    const composed = pair.normalize("NFC")
+    return composed.length === 1 ? composed : pair
+  })
+}
 
 /**
  * Normalize common Japanese form input variations.
@@ -98,6 +110,11 @@ export function normalizeJaInput(
     })
   }
 
+  const composeMarks = opts.kanaMarks === "compose"
+  if (composeMarks) {
+    value = composeKanaMarks(value)
+  }
+
   if (opts.kanaScript === "katakana") {
     value = value.replace(/[ぁ-ゖゝゞ]/g, kana =>
       String.fromCharCode(kana.charCodeAt(0) + KANA_SCRIPT_OFFSET),
@@ -106,6 +123,11 @@ export function normalizeJaInput(
     value = value.replace(/[ァ-ヶヽヾ]/g, kana =>
       String.fromCharCode(kana.charCodeAt(0) - KANA_SCRIPT_OFFSET),
     )
+  }
+
+  if (composeMarks && opts.kanaScript !== "preserve") {
+    // Converting the base character can make an unmatched mark composable.
+    value = composeKanaMarks(value)
   }
 
   if (opts.hyphens === "ascii") {

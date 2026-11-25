@@ -158,6 +158,52 @@ describe("normalizeJaInput", () => {
     )
   })
 
+  it("preserves combining kana marks by default and when explicitly requested", () => {
+    const input = "か\u3099く"
+    expect(normalizeJaInput(input)).toBe(input)
+    expect(normalizeJaInput(input, { kanaMarks: "preserve" })).toBe(input)
+    expect(normalizeJaInput(input, jaInputPresets.furigana)).toBe(input)
+  })
+
+  it("composes matching voiced and semi-voiced kana", () => {
+    expect(normalizeJaInput("か\u3099く ハ\u309aン ゝ\u3099 ヽ\u3099", {
+      kanaMarks: "compose",
+    })).toBe("がく パン ゞ ヾ")
+    expect(normalizeJaInput("ハ\u3099\u309a", { kanaMarks: "compose" })).toBe("バ\u309a")
+  })
+
+  it("preserves marks without a matching kana pair and leaves unrelated characters alone", () => {
+    const input = "\u3099\u309a あ\u3099 カ\u309a か゛は゜ ﾊﾟ ｶ\u3099 e\u0301"
+    expect(normalizeJaInput(input, { kanaMarks: "compose" })).toBe(input)
+  })
+
+  it("composes combining marks after optional half-width conversion", () => {
+    expect(normalizeJaInput("ﾊ\u309aﾝ ﾀﾞ ﾎﾟ", {
+      ...jaInputPresets.furigana,
+      kanaMarks: "compose",
+    })).toBe("パン ダ ポ")
+  })
+
+  it("composes before script conversion so equivalent representations stay equal", () => {
+    const options = { kanaMarks: "compose", kanaScript: "katakana" } as const
+    expect(normalizeJaInput("が か\u3099", options)).toBe("ガ ガ")
+    expect(normalizeJaInput("ヷ ワ\u3099 パ ハ\u309a", {
+      kanaMarks: "compose",
+      kanaScript: "hiragana",
+    })).toBe("ヷ ヷ ぱ ぱ")
+  })
+
+  it("composes newly matching pairs after script conversion and stays stable on repeat", () => {
+    const options = {
+      ...jaInputPresets.furigana,
+      kanaMarks: "compose",
+      kanaScript: "katakana",
+    } as const
+    const normalized = normalizeJaInput("わ\u3099 ｽｰﾊ\u309aｰ あ\u3099", options)
+    expect(normalized).toBe("ヷ スーパー ア\u3099")
+    expect(normalizeJaInput(normalized, options)).toBe(normalized)
+  })
+
   it("can disable space collapsing", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",

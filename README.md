@@ -20,6 +20,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 半角カタカナを必要に応じて全角に変換
 - フリガナなどの文字種をひらがなかカタカナに統一
+- かなと結合用の濁点・半濁点を必要に応じて1文字にまとめる
 - 電話番号・フリガナ・メールアドレス・複数行の住所向けプリセット
 - 依存ゼロ
 - TypeScript対応
@@ -59,6 +60,7 @@ normalizeJaInput(input, {
   alphabets: "halfwidth",
   katakana: "preserve",
   kanaScript: "preserve",
+  kanaMarks: "preserve",
   hyphens: "ascii",
   punctuation: "preserve",
 })
@@ -168,6 +170,27 @@ normalizeJaInput("ヤマダ　ﾀﾛｳ", { ...jaInputPresets.furigana, kanaScri
 // => "やまだ たろう"
 ```
 
+### `kanaMarks`
+
+Type: `"preserve" | "compose"`
+
+Default: `"preserve"`
+
+`"compose"` は、かなの直後にある結合用濁点（`U+3099`）または結合用半濁点（`U+309A`）を、対応する1文字にまとめます。単独の記号、1文字にまとまらない組み合わせ、独立した記号の `゛`・`゜` は保持します。半角の濁点・半濁点は `katakana` の設定で扱います。`"preserve"` はこの結合処理を省略します。
+
+半角カタカナの全角化後、`kanaScript` による文字種の変換前に結合します。変換後に新しく結合できる組み合わせも1文字にまとめ、その後に `hyphens` を適用します。
+
+```ts
+normalizeJaInput("か\u3099く ハ\u309Aン", { kanaMarks: "compose" })
+// => "がく パン"
+
+normalizeJaInput("が か\u3099", { kanaMarks: "compose", kanaScript: "katakana" })
+// => "ガ ガ"
+
+normalizeJaInput("あ\u3099", { kanaMarks: "compose" })
+// => "あ\u3099"
+```
+
 ### `hyphens`
 
 Type: `"preserve" | "ascii" | "between-digits"`
@@ -242,6 +265,8 @@ normalizeJaInput("\n東京都　　港区\n芝公園　１丁目\n", {
 - npm → `https://www.npmjs.com/package/normalize-ja-input`
 - GitHub → `https://github.com/fusaihanabi/normalize-ja-input`
 - Official → `https://dl.fusai-hanabi.com`
+
+デモでは入力と出力のコードポイント数を確認できます。「Combining mark」の例で結合をオンにすると、見た目が同じ `がく` のコードポイント数が3から2になります。
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 

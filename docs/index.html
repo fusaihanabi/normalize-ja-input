@@ -181,6 +181,10 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                       <input class="form-check-input" type="checkbox" id="katakana" />
                       <label class="form-check-label" for="katakana">fullwidth katakana</label>
                     </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="kanaMarks" />
+                      <label class="form-check-label" for="kanaMarks">combine kana marks</label>
+                    </div>
                   </div>
                   <div class="col-sm-6">
                     <div class="form-check form-switch">
@@ -229,6 +233,9 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                   <button class="btn btn-sm btn-outline-secondary copy-btn" id="copyOutput" type="button">Copy</button>
                 </div>
                 <div class="demo-output p-3" id="demoOutput"></div>
+                <p class="small text-secondary mt-2 mb-0">
+                  Code points (input → output) <span id="demoCodePoints"></span>
+                </p>
 
                 <div class="mt-4">
                   <p class="fw-semibold mb-2">Try examples</p>
@@ -240,6 +247,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ">Email</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｽｰﾊﾟｰ　ﾔﾏﾀﾞ">Katakana</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="やまだ　タロウ　ﾊﾅｺ">Mixed kana</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="か&#x3099;く">Combining mark</button>
                   </div>
                 </div>
               </div>
@@ -319,6 +327,7 @@ normalizeJaInput(input: string, options?: {
   alphabets?: "preserve" | "halfwidth"
   katakana?: "preserve" | "fullwidth"
   kanaScript?: "preserve" | "hiragana" | "katakana"
+  kanaMarks?: "preserve" | "compose"
   hyphens?: "preserve" | "ascii" | "between-digits"
   punctuation?: "preserve" | "ascii"
 }): string</code></pre>
@@ -365,6 +374,7 @@ normalizeJaInput(input: string, options?: {
 
       const demoInput = document.getElementById("demoInput")
       const demoOutput = document.getElementById("demoOutput")
+      const demoCodePoints = document.getElementById("demoCodePoints")
       const demoPreset = document.getElementById("demoPreset")
       const collapseSpaces = document.getElementById("collapseSpaces")
       const hyphens = document.getElementById("hyphens")
@@ -375,6 +385,7 @@ normalizeJaInput(input: string, options?: {
         ["digits", "preserve", "halfwidth"],
         ["alphabets", "preserve", "halfwidth"],
         ["katakana", "preserve", "fullwidth"],
+        ["kanaMarks", "preserve", "compose"],
         ["punctuation", "preserve", "ascii"],
       ].map(([id, unchecked, checked]) => [document.getElementById(id), unchecked, checked])
 
@@ -394,7 +405,10 @@ normalizeJaInput(input: string, options?: {
       const defaultOptions = getOptions()
 
       function renderDemo() {
-        demoOutput.textContent = normalizeJaInput(demoInput.value, getOptions())
+        const input = demoInput.value
+        const output = normalizeJaInput(input, getOptions())
+        demoOutput.textContent = output
+        demoCodePoints.textContent = `${Array.from(input).length} → ${Array.from(output).length}`
       }
 
       demoInput.addEventListener("input", renderDemo)
