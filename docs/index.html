@@ -75,6 +75,12 @@
         color: #d1fae5;
         border-radius: 0.75rem;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+
+      #demoSpaceLabels {
+        overflow-wrap: anywhere;
       }
 
       .copy-btn {
@@ -155,6 +161,10 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
               <div class="col-lg-6">
                 <label for="demoInput" class="form-label fw-semibold">Input</label>
                 <textarea id="demoInput" class="form-control" rows="6">　ＴＥＬ：０９０ー１２３４ー５６７８　</textarea>
+                <div id="demoSpacePreview" class="small text-secondary mt-2" hidden>
+                  <div>Input with space labels</div>
+                  <pre id="demoSpaceLabels"></pre>
+                </div>
 
                 <div class="mt-3">
                   <label for="demoPreset" class="form-label fw-semibold">Preset</label>
@@ -172,10 +182,6 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <div class="form-check form-switch">
                       <input class="form-check-input" type="checkbox" id="trim" checked />
                       <label class="form-check-label" for="trim">trim</label>
-                    </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="spaces" checked />
-                      <label class="form-check-label" for="spaces">fullwidth spaces</label>
                     </div>
                     <div class="form-check form-switch">
                       <input class="form-check-input" type="checkbox" id="katakana" />
@@ -201,7 +207,15 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     </div>
                   </div>
                   <div class="col-sm-6">
-                    <label class="form-label" for="collapseSpaces">Whitespace</label>
+                    <label class="form-label" for="spaces">Space conversion</label>
+                    <select class="form-select" id="spaces">
+                      <option value="halfwidth">Fullwidth spaces only</option>
+                      <option value="ascii">Fullwidth + no-break spaces</option>
+                      <option value="preserve">Preserve space widths</option>
+                    </select>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label" for="collapseSpaces">Whitespace collapsing</label>
                     <select class="form-select" id="collapseSpaces">
                       <option value="true">Collapse spaces, tabs and line breaks</option>
                       <option value="horizontal">Collapse spaces and tabs</option>
@@ -248,6 +262,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｽｰﾊﾟｰ　ﾔﾏﾀﾞ">Katakana</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="やまだ　タロウ　ﾊﾅｺ">Mixed kana</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="か&#x3099;く">Combining mark</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="山田&#x3000;&#x00A0;&#x202F;太郎">Mixed spaces</button>
                   </div>
                 </div>
               </div>
@@ -322,7 +337,7 @@ normalizeJaInput("やまだ　ﾀﾛｳ", {
 normalizeJaInput(input: string, options?: {
   trim?: boolean
   collapseSpaces?: boolean | "horizontal"
-  spaces?: "preserve" | "halfwidth"
+  spaces?: "preserve" | "halfwidth" | "ascii"
   digits?: "preserve" | "halfwidth"
   alphabets?: "preserve" | "halfwidth"
   katakana?: "preserve" | "fullwidth"
@@ -375,13 +390,15 @@ normalizeJaInput(input: string, options?: {
       const demoInput = document.getElementById("demoInput")
       const demoOutput = document.getElementById("demoOutput")
       const demoCodePoints = document.getElementById("demoCodePoints")
+      const demoSpacePreview = document.getElementById("demoSpacePreview")
+      const demoSpaceLabels = document.getElementById("demoSpaceLabels")
       const demoPreset = document.getElementById("demoPreset")
+      const spaces = document.getElementById("spaces")
       const collapseSpaces = document.getElementById("collapseSpaces")
       const hyphens = document.getElementById("hyphens")
       const kanaScript = document.getElementById("kanaScript")
       const checkboxOptions = [
         ["trim", false, true],
-        ["spaces", "preserve", "halfwidth"],
         ["digits", "preserve", "halfwidth"],
         ["alphabets", "preserve", "halfwidth"],
         ["katakana", "preserve", "fullwidth"],
@@ -393,6 +410,7 @@ normalizeJaInput(input: string, options?: {
         const whitespace = collapseSpaces.value
         const options = {
           collapseSpaces: whitespace === "horizontal" ? "horizontal" : whitespace === "true",
+          spaces: spaces.value,
           hyphens: hyphens.value,
           kanaScript: kanaScript.value,
         }
@@ -409,6 +427,12 @@ normalizeJaInput(input: string, options?: {
         const output = normalizeJaInput(input, getOptions())
         demoOutput.textContent = output
         demoCodePoints.textContent = `${Array.from(input).length} → ${Array.from(output).length}`
+        const labeledInput = input.replace(/[\u3000\u00a0\u202f]/g, space => {
+          const codePoint = space.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")
+          return `[U+${codePoint}]`
+        })
+        demoSpaceLabels.textContent = labeledInput
+        demoSpacePreview.hidden = labeledInput === input
       }
 
       demoInput.addEventListener("input", renderDemo)
@@ -420,13 +444,14 @@ normalizeJaInput(input: string, options?: {
           control.checked = options[control.id] === checked
         }
         collapseSpaces.value = String(options.collapseSpaces)
+        spaces.value = options.spaces
         hyphens.value = options.hyphens
         kanaScript.value = options.kanaScript
         renderDemo()
       })
 
       const optionControls = [
-        ...checkboxOptions.map(([control]) => control), collapseSpaces, hyphens, kanaScript,
+        ...checkboxOptions.map(([control]) => control), spaces, collapseSpaces, hyphens, kanaScript,
       ]
       optionControls.forEach(control => control.addEventListener("change", () => {
         demoPreset.value = "custom"

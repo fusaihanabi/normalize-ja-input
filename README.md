@@ -14,6 +14,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 全角数字を半角数字に変換
 - 全角英字を半角英字に変換
 - 全角スペースを半角スペースに変換
+- ノーブレークスペースも必要に応じて半角スペースに変換
 - 連続する空白を1つに正規化
 - 日本語入力で混ざりがちなハイフン類を `-` に統一
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
@@ -96,14 +97,27 @@ normalizeJaInput("東京都　　港区\n芝公園  １丁目", { collapseSpaces
 
 ### `spaces`
 
-Type: `"preserve" | "halfwidth"`  
+Type: `"preserve" | "halfwidth" | "ascii"`
+
 Default: `"halfwidth"`
 
-`"halfwidth"` は全角スペースを半角スペースにします。`"preserve"` を選んでも、`trim` が有効なら前後の全角スペースは取り除かれます。
+| 値 | 半角スペースに変換する文字 |
+| --- | --- |
+| `"preserve"` | 幅変換を省略 |
+| `"halfwidth"` | 全角スペース `U+3000` |
+| `"ascii"` | 全角スペース `U+3000`、ノーブレークスペース `U+00A0`、幅の狭いノーブレークスペース `U+202F` |
+
+空白の変換後に `collapseSpaces` を適用し、最後に `trim` を適用します。`collapseSpaces: false` なら並んだ空白の個数を保ちます。`spaces: "preserve"` でも `trim` が有効なら前後の空白を取り除きます。対象外の空白（たとえば文字列の途中にある `U+2007`）は保持します。
 
 ```ts
 normalizeJaInput("山田　太郎")
 // => "山田 太郎"
+
+normalizeJaInput("山田\u00A0\u202F太郎", { spaces: "ascii" })
+// => "山田 太郎"
+
+normalizeJaInput("山田\u00A0\u202F太郎", { spaces: "ascii", collapseSpaces: false })
+// => "山田  太郎"
 ```
 
 ### `digits`
@@ -253,6 +267,12 @@ normalizeJaInput("\n東京都　　港区\n芝公園　１丁目\n", {
   trim: false,
 })
 // => "\n東京都 港区\n芝公園 1丁目\n"
+
+normalizeJaInput("東京都\u00A0港区\n芝公園\u202F１丁目", {
+  ...jaInputPresets.multilineAddress,
+  spaces: "ascii",
+})
+// => "東京都 港区\n芝公園 1丁目"
 ```
 
 電話番号やメールアドレスの妥当性は、変換後にフォーム側で確認してください。
@@ -267,6 +287,8 @@ normalizeJaInput("\n東京都　　港区\n芝公園　１丁目\n", {
 - Official → `https://dl.fusai-hanabi.com`
 
 デモでは入力と出力のコードポイント数を確認できます。「Combining mark」の例で結合をオンにすると、見た目が同じ `がく` のコードポイント数が3から2になります。
+
+「Mixed spaces」の例では、入力欄の下に3種類の空白がコードポイント付きで表示されます。「Space conversion」で「Fullwidth + no-break spaces」を選ぶと、3種類とも半角スペースに変換されます。
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 

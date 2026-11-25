@@ -49,6 +49,7 @@ assert.equal(
   normalizeJaInput("わ\\u3099", { kanaScript: "katakana", kanaMarks: "compose" }),
   "ヷ",
 )
+assert.equal(normalizeJaInput("山田\\u00a0\\u202f太郎", { spaces: "ascii" }), "山田 太郎")
 `)
   runNode(["runtime.mjs"])
 
@@ -70,6 +71,11 @@ normalizeJaInput("か", { kanaMarks: "preserve" })
 normalizeJaInput("か", { kanaMarks: "compose" })
 // @ts-expect-error Kana marks accept only the documented values.
 normalizeJaInput("か", { kanaMarks: "nfc" })
+normalizeJaInput("山田", { spaces: "preserve" })
+normalizeJaInput("山田", { spaces: "halfwidth" })
+normalizeJaInput("山田", { spaces: "ascii" })
+// @ts-expect-error Space conversion accepts only the documented values.
+normalizeJaInput("山田", { spaces: "fullwidth" })
 // @ts-expect-error The preset registry is read-only.
 jaInputPresets.phone = jaInputPresets.phone
 // @ts-expect-error The preset options are read-only.

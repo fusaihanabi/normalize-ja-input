@@ -35,6 +35,28 @@ describe("normalizeJaInput", () => {
     )
   })
 
+  it("preserves no-break spaces in the existing space modes", () => {
+    const input = "山田\u3000\u00a0\u202f太郎"
+    expect(normalizeJaInput(input)).toBe("山田 \u00a0\u202f太郎")
+    expect(normalizeJaInput(input, { spaces: "halfwidth" })).toBe("山田 \u00a0\u202f太郎")
+    expect(normalizeJaInput(input, { spaces: "preserve" })).toBe(input)
+  })
+
+  it("converts only the supported spaces before optional collapsing", () => {
+    const input = "山田\u3000\u00a0\u202f太郎\u2007様"
+    expect(normalizeJaInput(input, { spaces: "ascii" })).toBe("山田 太郎\u2007様")
+    expect(normalizeJaInput(input, { spaces: "ascii", collapseSpaces: false })).toBe(
+      "山田   太郎\u2007様",
+    )
+  })
+
+  it("trims after the space conversion unless disabled", () => {
+    const input = "\u00a0山田\u202f太郎\u3000"
+    expect(normalizeJaInput(input, { spaces: "ascii" })).toBe("山田 太郎")
+    expect(normalizeJaInput(input, { spaces: "ascii", trim: false })).toBe(" 山田 太郎 ")
+    expect(normalizeJaInput(input, { spaces: "preserve" })).toBe("山田\u202f太郎")
+  })
+
   it("can preserve digits", () => {
     expect(normalizeJaInput("１２３", { digits: "preserve" })).toBe("１２３")
   })
@@ -238,6 +260,9 @@ describe("jaInputPresets", () => {
     expect(normalizeJaInput("　Ａ－Ｂ　 \n＠ｅｘａｍｐｌｅ．ｊｐ　", jaInputPresets.email)).toBe(
       "A－B　 \n@example.jp",
     )
+    expect(normalizeJaInput("\u202fＡ\u00a0\u202fＢ＠ｅｘａｍｐｌｅ．ｊｐ\u00a0", jaInputPresets.email)).toBe(
+      "A\u00a0\u202fB@example.jp",
+    )
   })
 
   it("normalizes multiline addresses and supports overriding individual options", () => {
@@ -249,6 +274,14 @@ describe("jaInputPresets", () => {
       "\n東京都 港区\nメゾン青山 101\n",
     )
     expect(normalizeJaInput(input)).toBe("東京都 港区 メゾン青山 101")
+  })
+
+  it("can normalize pasted spaces without folding address line breaks", () => {
+    const input = "東京都\u00a0港区\r\n芝公園\u202f\u3000１丁目"
+    expect(normalizeJaInput(input, {
+      ...jaInputPresets.multilineAddress,
+      spaces: "ascii",
+    })).toBe("東京都 港区\r\n芝公園 1丁目")
   })
 
   it("freezes the preset registry and every option object", () => {

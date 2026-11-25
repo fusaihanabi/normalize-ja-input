@@ -46,7 +46,10 @@ function composeKanaMarks(value) {
 export function normalizeJaInput(input, options = {}) {
     const opts = { ...DEFAULT_OPTIONS, ...options };
     let value = input;
-    if (opts.spaces === "halfwidth") {
+    if (opts.spaces === "ascii") {
+        value = value.replace(/[\u3000\u00a0\u202f]/g, " ");
+    }
+    else if (opts.spaces === "halfwidth") {
         value = value.replace(/\u3000/g, " ");
     }
     if (opts.digits === "halfwidth") {

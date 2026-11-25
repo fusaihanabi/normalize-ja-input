@@ -5,8 +5,8 @@ export type NormalizeJaInputOptions = {
   /** Collapse ASCII whitespace, or only spaces and tabs with "horizontal". */
   collapseSpaces?: boolean | "horizontal"
 
-  /** Convert full-width spaces to half-width spaces. */
-  spaces?: "preserve" | "halfwidth"
+  /** Convert full-width spaces, or also no-break and narrow no-break spaces with "ascii". */
+  spaces?: "preserve" | "halfwidth" | "ascii"
 
   /** Convert full-width digits to half-width digits. */
   digits?: "preserve" | "halfwidth"
@@ -86,7 +86,9 @@ export function normalizeJaInput(
   const opts = { ...DEFAULT_OPTIONS, ...options }
   let value = input
 
-  if (opts.spaces === "halfwidth") {
+  if (opts.spaces === "ascii") {
+    value = value.replace(/[\u3000\u00a0\u202f]/g, " ")
+  } else if (opts.spaces === "halfwidth") {
     value = value.replace(/\u3000/g, " ")
   }
 
