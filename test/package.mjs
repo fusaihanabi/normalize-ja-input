@@ -45,8 +45,8 @@ function expectCliOutput(args, output, input) {
   assert.equal(result.stdout, output)
 }
 
-async function expectStreamingJsonlOutput() {
-  const cli = invokeCli(spawn, ["--jsonl"], { stdio: ["pipe", "pipe", "pipe"] })
+async function expectStreamingJsonlOutput(args, [firstInput, remainingInput], expected) {
+  const cli = invokeCli(spawn, args, { stdio: ["pipe", "pipe", "pipe"] })
   const lines = createInterface({ input: cli.stdout })
   const signal = AbortSignal.timeout(10_000)
   const closed = once(cli, "close", { signal })
@@ -57,18 +57,18 @@ async function expectStreamingJsonlOutput() {
 
   try {
     const firstLine = once(lines, "line", { signal })
-    cli.stdin.write('"　山田　太郎　"\r\n')
+    cli.stdin.write(firstInput)
     const [line] = await Promise.race([
       firstLine,
       closed.then(() => { throw new Error("CLI exited before writing the first record") }),
     ])
-    assert.equal(line, '"山田 太郎"')
+    assert.equal(line, expected[0])
     // The first result must arrive before we supply the remaining input and EOF.
-    cli.stdin.end('"２件目"')
+    cli.stdin.end(remainingInput)
     const [status] = await closed
     assert.equal(status, 0, stderr)
     assert.equal(stderr, "")
-    assert.deepEqual(received, ['"山田 太郎"', '"2件目"'])
+    assert.deepEqual(received, expected)
   } finally {
     lines.close()
     cli.stdin.destroy()
@@ -213,6 +213,35 @@ jaInputPresets.phone.hyphens = "between-digits"
     '"０９０ー１２３４"\n"080-5678"\n',
   )
 
+  const metadata = JSON.stringify({ furigana: "ﾈｽﾄ", tokens: [{ text: '}[,"\\' }, [null, true]] })
+  const record = ' \t{"id":9007199254740993123456789, "batch":1e+03, "decimal":1.2300, '
+    + '"overflow":-1E+400, "zero":-0, "meta":' + metadata
+    + ', "furi\\u0067ana" : "ﾔﾏﾀﾞ　ﾀﾛｳ", "note":"\\u0041"}  '
+  const normalizedRecord = record.replace('"ﾔﾏﾀﾞ　ﾀﾛｳ"', '"ヤマダ タロウ"')
+  const unchangedRecord = '{"id":9007199254740993123456789,"batch":1e+03,"furigana":"\\u30E4\\u30DE\\u30C0"}'
+  const fieldArgs = ["--jsonl", "--field", "furigana", "--preset", "furigana"]
+  expectCliOutput(
+    fieldArgs,
+    `${normalizedRecord}\n${unchangedRecord}\n`,
+    `${record}\r\n${unchangedRecord}`,
+  )
+  expectCliOutput(
+    [...fieldArgs, "--changes"],
+    `{"value":${normalizedRecord},"changes":["spaces","katakana"]}\n`
+      + `{"value":${unchangedRecord},"changes":[]}\n`,
+    `${record}\n${unchangedRecord}\n`,
+  )
+  expectCliOutput(
+    ["--jsonl", "--field", "person.name"],
+    '{"person":{"name":"Ｂ"},"person.name":"A","tag":1,"tag":2, "tail":[0,{}]}\n',
+    '{"person":{"name":"Ｂ"},"person.name":"Ａ","tag":1,"tag":2, "tail":[0,{}]}',
+  )
+  expectCliOutput(
+    ["--jsonl", "--field=__proto__"],
+    '{"__proto__":"ABC","":-0}\n',
+    '{"__proto__":"ＡＢＣ","":-0}',
+  )
+
   const help = runCli(["--help"])
   assert.ifError(help.error)
   assert.equal(help.status, 0, help.stderr)
@@ -220,6 +249,7 @@ jaInputPresets.phone.hyphens = "between-digits"
   assert.match(help.stdout, /normalize-ja-input \[--preset <name>\]/)
   assert.match(help.stdout, /phone, furigana, email, multilineAddress/)
   assert.match(help.stdout, /--jsonl/)
+  assert.match(help.stdout, /--field <name>/)
 
   for (const [args, message] of [
     [["--unknown"], /Unknown option/],
@@ -227,6 +257,8 @@ jaInputPresets.phone.hyphens = "between-digits"
     [["--preset", "constructor", "入力"], /Unknown preset "constructor"/],
     [["先頭", "末尾"], /Expected at most one text argument/],
     [["--jsonl", ""], /--jsonl reads standard input/],
+    [["--field", "furigana"], /--field requires --jsonl/],
+    [["--jsonl", "--field"], /--field/],
   ]) {
     const failure = runCli(args)
     assert.ifError(failure.error)
@@ -248,7 +280,31 @@ jaInputPresets.phone.hyphens = "between-digits"
     assert.match(failure.stderr, message)
   }
 
-  await expectStreamingJsonlOutput()
+  for (const [badRecord, message] of [
+    ['"ﾔﾏﾀﾞ"', /Line 2 must contain a JSON object when using --field/],
+    ["null", /Line 2 must contain a JSON object when using --field/],
+    ['[{"furigana":"ﾔﾏﾀﾞ"}]', /Line 2 must contain a JSON object when using --field/],
+    ['{"meta":{"furigana":"ﾔﾏﾀﾞ"}}', /Line 2 is missing field "furigana"/],
+    ['{"furigana":9007199254740993123456789}', /Line 2 field "furigana" must contain a JSON string/],
+    ['{"furigana":"ﾔﾏﾀﾞ","furi\\u0067ana":"ﾀﾛｳ"}', /Line 2 contains duplicate field "furigana"/],
+  ]) {
+    const failure = runCli(fieldArgs, `${record}\r\n${badRecord}\n${unchangedRecord}\n`)
+    assert.ifError(failure.error)
+    assert.equal(failure.status, 2, failure.stderr)
+    assert.equal(failure.stdout, `${normalizedRecord}\n`)
+    assert.match(failure.stderr, message)
+  }
+
+  await expectStreamingJsonlOutput(
+    ["--jsonl"],
+    ['"　山田　太郎　"\r\n', '"２件目"'],
+    ['"山田 太郎"', '"2件目"'],
+  )
+  await expectStreamingJsonlOutput(
+    fieldArgs,
+    [`${record}\r\n`, unchangedRecord],
+    [normalizedRecord, unchangedRecord],
+  )
   console.log("Packed package passed runtime import, public type, and CLI checks.")
 } finally {
   const resolved = realpathSync(consumer)
