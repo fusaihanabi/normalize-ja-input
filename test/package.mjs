@@ -1,8 +1,10 @@
 import assert from "node:assert/strict"
-import { execFileSync, spawnSync } from "node:child_process"
+import { execFileSync, spawn, spawnSync } from "node:child_process"
+import { once } from "node:events"
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
+import { createInterface } from "node:readline"
 import { fileURLToPath } from "node:url"
 
 const npm = process.env.npm_execpath
@@ -17,18 +19,22 @@ const cache = join(consumer, "npm-cache")
 const runNode = (args, cwd = consumer) =>
   execFileSync(process.execPath, args, { cwd, encoding: "utf8" })
 
-function runCli(args, input = "") {
-  const options = { cwd: consumer, input, encoding: "utf8" }
+function invokeCli(start, args, options) {
+  const spawnOptions = { cwd: consumer, ...options }
   if (process.platform === "win32") {
     // cmd.exe runs the npm shim with the fixed arguments used by these tests.
     const shim = '".\\node_modules\\.bin\\normalize-ja-input.cmd"'
     const command = [shim, ...args.map(arg => `"${arg}"`)].join(" ")
-    return spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", `"${command}"`], {
-      ...options,
+    return start(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", `"${command}"`], {
+      ...spawnOptions,
       windowsVerbatimArguments: true,
     })
   }
-  return spawnSync(join(consumer, "node_modules", ".bin", "normalize-ja-input"), args, options)
+  return start(join(consumer, "node_modules", ".bin", "normalize-ja-input"), args, spawnOptions)
+}
+
+function runCli(args, input = "") {
+  return invokeCli(spawnSync, args, { input, encoding: "utf8" })
 }
 
 function expectCliOutput(args, output, input) {
@@ -37,6 +43,39 @@ function expectCliOutput(args, output, input) {
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stderr, "")
   assert.equal(result.stdout, output)
+}
+
+async function expectStreamingJsonlOutput() {
+  const cli = invokeCli(spawn, ["--jsonl"], { stdio: ["pipe", "pipe", "pipe"] })
+  const lines = createInterface({ input: cli.stdout })
+  const signal = AbortSignal.timeout(10_000)
+  const closed = once(cli, "close", { signal })
+  const received = []
+  let stderr = ""
+  lines.on("line", line => received.push(line))
+  cli.stderr.setEncoding("utf8").on("data", chunk => { stderr += chunk })
+
+  try {
+    const firstLine = once(lines, "line", { signal })
+    cli.stdin.write('"　山田　太郎　"\r\n')
+    const [line] = await Promise.race([
+      firstLine,
+      closed.then(() => { throw new Error("CLI exited before writing the first record") }),
+    ])
+    assert.equal(line, '"山田 太郎"')
+    // The first result must arrive before we supply the remaining input and EOF.
+    cli.stdin.end('"２件目"')
+    const [status] = await closed
+    assert.equal(status, 0, stderr)
+    assert.equal(stderr, "")
+    assert.deepEqual(received, ['"山田 太郎"', '"2件目"'])
+  } finally {
+    lines.close()
+    cli.stdin.destroy()
+    cli.stdout.destroy()
+    cli.stderr.destroy()
+    if (cli.exitCode === null && cli.signalCode === null) cli.kill()
+  }
 }
 
 try {
@@ -161,18 +200,33 @@ jaInputPresets.phone.hyphens = "between-digits"
   expectCliOutput(["--changes"], '{"value":"","changes":[]}\n')
   expectCliOutput(["--", "--help"], "--help")
 
+  expectCliOutput(["--jsonl"], '"ABC"\n""\n', '"　ＡＢＣ　"\r\n""')
+  expectCliOutput(["--jsonl"], "")
+  expectCliOutput(
+    ["--jsonl", "--preset", "multilineAddress"],
+    '"東京都 港区\\n芝公園 1丁目"\n"大阪府 大阪市"\n',
+    '"東京都　港区\\n芝公園　１丁目"\n"大阪府　大阪市"\r\n',
+  )
+  expectCliOutput(
+    ["--jsonl", "--changes", "--preset", "phone"],
+    '{"value":"090-1234","changes":["digits","hyphens"]}\n{"value":"080-5678","changes":[]}\n',
+    '"０９０ー１２３４"\n"080-5678"\n',
+  )
+
   const help = runCli(["--help"])
   assert.ifError(help.error)
   assert.equal(help.status, 0, help.stderr)
   assert.equal(help.stderr, "")
   assert.match(help.stdout, /normalize-ja-input \[--preset <name>\]/)
   assert.match(help.stdout, /phone, furigana, email, multilineAddress/)
+  assert.match(help.stdout, /--jsonl/)
 
   for (const [args, message] of [
     [["--unknown"], /Unknown option/],
     [["--preset"], /--preset/],
     [["--preset", "constructor", "入力"], /Unknown preset "constructor"/],
     [["先頭", "末尾"], /Expected at most one text argument/],
+    [["--jsonl", ""], /--jsonl reads standard input/],
   ]) {
     const failure = runCli(args)
     assert.ifError(failure.error)
@@ -181,6 +235,20 @@ jaInputPresets.phone.hyphens = "between-digits"
     assert.match(failure.stderr, message)
   }
 
+  for (const [input, message] of [
+    ['"Ａ"\r\n"Ｂ"\n \t\n"Ｃ"\n', /Line 3 is not valid JSON/],
+    ['"Ａ"\r\n"Ｂ"\n"unfinished\n"Ｃ"\n', /Line 3 is not valid JSON/],
+    ['"Ａ"\r\n"Ｂ"\nnull\n"Ｃ"\n', /Line 3 must contain a JSON string/],
+    [Buffer.concat([Buffer.from('"Ａ"\r\n"Ｂ"\n"'), Buffer.from([0xff])]), /Line 3 is not valid UTF-8/],
+  ]) {
+    const failure = runCli(["--jsonl"], input)
+    assert.ifError(failure.error)
+    assert.equal(failure.status, 2, failure.stderr)
+    assert.equal(failure.stdout, '"A"\n"B"\n')
+    assert.match(failure.stderr, message)
+  }
+
+  await expectStreamingJsonlOutput()
   console.log("Packed package passed runtime import, public type, and CLI checks.")
 } finally {
   const resolved = realpathSync(consumer)
