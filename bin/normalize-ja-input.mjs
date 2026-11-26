@@ -5,6 +5,7 @@ import { jaInputPresets, normalizeJaInput, normalizeJaInputWithChanges } from ".
 const command = "normalize-ja-input"
 const presets = Object.keys(jaInputPresets).join(", ")
 const writeOutput = promisify(process.stdout.write.bind(process.stdout))
+const writeDiagnostic = promisify(process.stderr.write.bind(process.stderr))
 const jsonWhitespace = /[ \t\r\n]/
 
 function usageError(message) {
@@ -19,7 +20,13 @@ function ioError(error) {
   }
 }
 
+function reportNormalizationNeeded(message) {
+  process.exitCode = 3
+  return writeDiagnostic(`${message}\n`)
+}
+
 process.stdout.on("error", ioError)
+process.stderr.on("error", () => { process.exitCode = 1 })
 
 async function* readLines(input) {
   const fragments = []
@@ -94,7 +101,7 @@ function findFieldRanges(text, fields) {
   return { ranges }
 }
 
-function normalizeJsonlFields(text, fields, includeChanges, singleField) {
+function normalizeJsonlFields(text, fields, { includeChanges, singleField, check }) {
   const { ranges, error } = findFieldRanges(text, fields)
   if (error) return { error }
 
@@ -110,6 +117,7 @@ function normalizeJsonlFields(text, fields, includeChanges, singleField) {
 
   const parts = []
   const changes = []
+  const changedFields = []
   let copiedUntil = 0
   // The ranges are in source order, so each offset refers to the unchanged input.
   for (const [field, [start, end]] of ranges) {
@@ -121,11 +129,16 @@ function normalizeJsonlFields(text, fields, includeChanges, singleField) {
     if (includeChanges) {
       changes.push([field, result.changes])
     }
-    if (result.value !== input) {
-      parts.push(text.slice(copiedUntil, start), JSON.stringify(result.value))
-      copiedUntil = end
+    if (result.value === input) continue
+    if (check) {
+      changedFields.push(field)
+      continue
     }
+    parts.push(text.slice(copiedUntil, start), JSON.stringify(result.value))
+    copiedUntil = end
   }
+
+  if (check) return { changedFields }
 
   const record = parts.join("") + text.slice(copiedUntil)
   if (!includeChanges) return { output: record }
@@ -155,7 +168,7 @@ function parseFieldPresets(assignments) {
   return { fields }
 }
 
-async function normalizeJsonl(input, { options, includeChanges, field, fieldPresets }) {
+async function normalizeJsonl(input, { options, includeChanges, field, fieldPresets, check }) {
   const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true })
   const singleField = field !== undefined
   const fields = singleField ? new Map([[field, options]]) : fieldPresets
@@ -185,18 +198,35 @@ async function normalizeJsonl(input, { options, includeChanges, field, fieldPres
         usageError(`Line ${lineNumber} must contain a JSON object when using ${option}.`)
         return
       }
-      const { output, error } = normalizeJsonlFields(text, fields, includeChanges, singleField)
+      const { output, changedFields, error } = normalizeJsonlFields(text, fields, {
+        includeChanges, singleField, check,
+      })
       if (error) {
         usageError(`Line ${lineNumber} ${error}`)
         return
       }
-      await writeOutput(`${output}\n`)
+      if (check) {
+        if (changedFields.length > 0) {
+          const label = changedFields.length === 1 ? "field" : "fields"
+          const names = changedFields.map(name => JSON.stringify(name)).join(", ")
+          await reportNormalizationNeeded(`Line ${lineNumber} needs normalization in ${label} ${names}.`)
+        }
+      } else {
+        await writeOutput(`${output}\n`)
+      }
       continue
     }
 
     if (typeof value !== "string") {
       usageError(`Line ${lineNumber} must contain a JSON string.`)
       return
+    }
+
+    if (check) {
+      if (normalizeJaInput(value, options) !== value) {
+        await reportNormalizationNeeded(`Line ${lineNumber} needs normalization.`)
+      }
+      continue
     }
 
     const result = includeChanges
@@ -214,6 +244,7 @@ async function main() {
       options: {
         preset: { type: "string" },
         changes: { type: "boolean" },
+        check: { type: "boolean" },
         jsonl: { type: "boolean" },
         field: { type: "string" },
         "field-preset": { type: "string", multiple: true },
@@ -227,20 +258,26 @@ async function main() {
 
   const { values, positionals } = parsed
   if (values.help) {
-    process.stdout.write(`${command} [--preset <name>] [--changes] [--] [text]
-${command} [--preset <name>] [--changes] --jsonl [--field <name>]
-${command} [--changes] --jsonl --field-preset <name>=<preset> [--field-preset <name>=<preset> ...]
+    process.stdout.write(`${command} [--preset <name>] [--changes | --check] [--] [text]
+${command} [--preset <name>] [--changes | --check] --jsonl [--field <name>]
+${command} [--changes | --check] --jsonl --field-preset <name>=<preset> [--field-preset <name>=<preset> ...]
 
 Normalize one text argument or read UTF-8 text from standard input.
 
   --preset <name>  Use a preset (${presets})
   --changes        Print the result and changes as JSON
+  --check          Report required normalization to standard error and exit with 3 if any
   --jsonl          Normalize one JSON record per line from standard input
   --field <name>   Normalize one top-level string field in each JSON object with --jsonl
   --field-preset   Use a preset for each named field with --jsonl (repeatable)
   --help           Show this help
   --               Treat the following text as an argument
 `)
+    return
+  }
+
+  if (values.check && values.changes) {
+    usageError("--check cannot be combined with --changes.")
     return
   }
 
@@ -281,7 +318,9 @@ Normalize one text argument or read UTF-8 text from standard input.
       usageError("Pipe UTF-8 JSON Lines to standard input when using --jsonl.")
       return
     }
-    await normalizeJsonl(process.stdin, { options, includeChanges: values.changes, field, fieldPresets })
+    await normalizeJsonl(process.stdin, {
+      options, includeChanges: values.changes, field, fieldPresets, check: values.check,
+    })
     return
   }
 
@@ -302,6 +341,13 @@ Normalize one text argument or read UTF-8 text from standard input.
       input += chunk
     }
   }
+  if (values.check) {
+    if (normalizeJaInput(input, options) !== input) {
+      await reportNormalizationNeeded("Input needs normalization.")
+    }
+    return
+  }
+
   const output = values.changes
     ? `${JSON.stringify(normalizeJaInputWithChanges(input, options))}\n`
     : normalizeJaInput(input, options)

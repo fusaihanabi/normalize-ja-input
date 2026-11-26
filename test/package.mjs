@@ -45,6 +45,14 @@ function expectCliOutput(args, output, input) {
   assert.equal(result.stdout, output)
 }
 
+function expectCliCheck(args, input, status, diagnostics = "") {
+  const result = runCli([...args, "--check"], input)
+  assert.ifError(result.error)
+  assert.equal(result.status, status, result.stderr)
+  assert.equal(result.stdout, "")
+  assert.equal(result.stderr, diagnostics)
+}
+
 async function expectStreamingJsonlOutput(args, [firstInput, remainingInput], expected) {
   const cli = invokeCli(spawn, args, { stdio: ["pipe", "pipe", "pipe"] })
   const lines = createInterface({ input: cli.stdout })
@@ -268,6 +276,44 @@ jaInputPresets.phone.hyphens = "between-digits"
     '{"team=name":"ﾔﾏﾀﾞ","__proto__":"０９０ー１２３４","id":9007199254740993123456789}',
   )
 
+  expectCliCheck([], "", 0)
+  expectCliCheck(["山田 太郎"], "　ＡＢＣ　", 0)
+  expectCliCheck(["--preset", "phone", "　０９０ー１２３４　"], "", 3, "Input needs normalization.\n")
+  expectCliCheck([], "　山田　太郎　", 3, "Input needs normalization.\n")
+  expectCliCheck(["--jsonl"], "", 0)
+  expectCliCheck(["--jsonl"], '"\\u0041"\r\n""', 0)
+  expectCliCheck(
+    ["--jsonl"],
+    '"Ａ"\r\n"B"\n"Ｃ"',
+    3,
+    "Line 1 needs normalization.\nLine 3 needs normalization.\n",
+  )
+  expectCliCheck(fieldArgs, unchangedRecord, 0)
+  expectCliCheck(fieldArgs, `${record}\r\n${unchangedRecord}`, 3, 'Line 1 needs normalization in field "furigana".\n')
+  expectCliCheck(fieldPresetArgs, unchangedMultiRecord, 0)
+  expectCliCheck(
+    fieldPresetArgs,
+    multiInput,
+    3,
+    'Line 1 needs normalization in fields "furigana", "phone".\n'
+      + 'Line 2 needs normalization in field "phone".\n',
+  )
+
+  const usageHint = "Run normalize-ja-input --help for usage.\n"
+  expectCliCheck(
+    ["--jsonl"],
+    '"Ａ"\nnull\n"Ｂ"',
+    2,
+    "Line 1 needs normalization.\nnormalize-ja-input: Line 2 must contain a JSON string.\n" + usageHint,
+  )
+  expectCliCheck(
+    fieldPresetArgs,
+    `${multiRecord}\r\n{"furigana":"ﾔﾏﾀﾞ"}\n${partlyChangedRecord}\n`,
+    2,
+    'Line 1 needs normalization in fields "furigana", "phone".\n'
+      + 'normalize-ja-input: Line 2 is missing field "phone".\n' + usageHint,
+  )
+
   const help = runCli(["--help"])
   assert.ifError(help.error)
   assert.equal(help.status, 0, help.stderr)
@@ -277,6 +323,7 @@ jaInputPresets.phone.hyphens = "between-digits"
   assert.match(help.stdout, /--jsonl/)
   assert.match(help.stdout, /--field <name>/)
   assert.match(help.stdout, /--field-preset <name>=<preset>/)
+  assert.match(help.stdout, /--check/)
 
   for (const [args, message] of [
     [["--unknown"], /Unknown option/],
@@ -292,6 +339,7 @@ jaInputPresets.phone.hyphens = "between-digits"
     [[...fieldPresetArgs, "--field-preset", "phone=furigana"], /Duplicate --field-preset for field "phone"/],
     [[...fieldPresetArgs, "--field", "phone"], /cannot be combined with --field or --preset/],
     [[...fieldPresetArgs, "--preset", "phone"], /cannot be combined with --field or --preset/],
+    [["--check", "--changes"], /--check cannot be combined with --changes/],
   ]) {
     const failure = runCli(args)
     assert.ifError(failure.error)
