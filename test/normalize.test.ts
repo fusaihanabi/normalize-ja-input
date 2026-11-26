@@ -246,6 +246,47 @@ describe("normalizeJaInput", () => {
     })).toBe("\n山田\n\n太郎\n")
   })
 
+  it("preserves line padding by default and when line trimming is disabled", () => {
+    const input = "先頭  \r\n  途中  \n  末尾"
+    const expected = "先頭 \r\n 途中 \n 末尾"
+    expect(normalizeJaInput(input, jaInputPresets.multilineAddress)).toBe(expected)
+    expect(normalizeJaInput(input, {
+      ...jaInputPresets.multilineAddress,
+      trimLines: false,
+    })).toBe(expected)
+  })
+
+  it("trims spaces and tabs at CRLF, CR, and LF boundaries and preserves blank lines", () => {
+    const input = "\r\n\t東京都  港区 \r\n \t\r\n 芝公園\t１丁目\t\r １０１号室 \n 受付 \t\n"
+    expect(normalizeJaInput(input, { trimLines: true, collapseSpaces: false, trim: false })).toBe(
+      "\r\n東京都  港区\r\n\r\n芝公園\t1丁目\r101号室\n受付\n",
+    )
+    expect(normalizeJaInput(input, { ...jaInputPresets.multilineAddress, trimLines: true })).toBe(
+      "東京都 港区\r\n\r\n芝公園 1丁目\r101号室\n受付",
+    )
+  })
+
+  it("uses space conversion before trimming and preserves other spaces and separators", () => {
+    const input = "先頭\n\u00a0 港区 \u202f\u3000\n\u2007芝公園\u2007\n甲 \u2028 乙 \u2029 丙"
+    const options = { trimLines: true, collapseSpaces: false } as const
+    expect(normalizeJaInput(input, { ...options, spaces: "preserve" })).toBe(input)
+    expect(normalizeJaInput(input, { ...options, spaces: "ascii" })).toBe(
+      "先頭\n港区\n\u2007芝公園\u2007\n甲 \u2028 乙 \u2029 丙",
+    )
+  })
+
+  it("normalizes mixed line endings before trimming and applies whitespace collapsing after", () => {
+    const input = " 港区 \r \t\n 芝公園 "
+    const options = { ...jaInputPresets.multilineAddress, trimLines: true } as const
+    expect(normalizeJaInput(input, options)).toBe("港区\r\n芝公園")
+    expect(normalizeJaInput(input, { ...options, lineEndings: "lf" })).toBe("港区\n\n芝公園")
+    expect(normalizeJaInput("\r\n 港区 \r\n 芝公園 \n", {
+      trimLines: true,
+      collapseSpaces: true,
+      trim: false,
+    })).toBe(" 港区 芝公園 ")
+  })
+
   it("can disable space collapsing", () => {
     expect(normalizeJaInput("山田   太郎", { collapseSpaces: false })).toBe(
       "山田   太郎",

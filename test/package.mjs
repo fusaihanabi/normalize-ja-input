@@ -60,6 +60,13 @@ assert.equal(
   }),
   "港区\\n\\n芝公園\\n受付",
 )
+assert.equal(
+  normalizeJaInput(" 東京都  港区 \\r\\n \\t\\r\\n 芝公園 １丁目 ", {
+    ...jaInputPresets.multilineAddress,
+    trimLines: true,
+  }),
+  "東京都 港区\\r\\n\\r\\n芝公園 1丁目",
+)
 `)
   runNode(["runtime.mjs"])
 
@@ -90,6 +97,10 @@ normalizeJaInput("山田", { lineEndings: "preserve" })
 normalizeJaInput("山田", { lineEndings: "lf" })
 // @ts-expect-error Line ending conversion accepts only the documented values.
 normalizeJaInput("山田", { lineEndings: "crlf" })
+normalizeJaInput("山田", { trimLines: true })
+normalizeJaInput("山田", { trimLines: false })
+// @ts-expect-error Line trimming accepts a boolean.
+normalizeJaInput("山田", { trimLines: "true" })
 // @ts-expect-error The preset registry is read-only.
 jaInputPresets.phone = jaInputPresets.phone
 // @ts-expect-error The preset options are read-only.

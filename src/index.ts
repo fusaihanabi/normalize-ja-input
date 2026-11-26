@@ -5,6 +5,9 @@ export type NormalizeJaInputOptions = {
   /** Convert CRLF and standalone CR line endings to LF. */
   lineEndings?: "preserve" | "lf"
 
+  /** Remove spaces and tabs from the start and end of each line. */
+  trimLines?: boolean
+
   /** Collapse ASCII whitespace, or only spaces and tabs with "horizontal". */
   collapseSpaces?: boolean | "horizontal"
 
@@ -49,6 +52,7 @@ export const jaInputPresets = Object.freeze({
 const DEFAULT_OPTIONS: Required<NormalizeJaInputOptions> = {
   trim: true,
   lineEndings: "preserve",
+  trimLines: false,
   collapseSpaces: true,
   spaces: "halfwidth",
   digits: "halfwidth",
@@ -154,6 +158,15 @@ export function normalizeJaInput(
 
   if (opts.lineEndings === "lf") {
     value = value.replace(/\r\n?/g, "\n")
+  }
+
+  if (opts.trimLines) {
+    value = value.replace(/[ \t]+/g, (spaces, index: number, input: string) => {
+      const before = input.charAt(index - 1)
+      const after = input.charAt(index + spaces.length)
+      const touchesLineBoundary = !before || !after || /[\r\n]/.test(before + after)
+      return touchesLineBoundary ? "" : spaces
+    })
   }
 
   if (opts.collapseSpaces) {

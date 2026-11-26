@@ -13,6 +13,7 @@ export const jaInputPresets = Object.freeze({
 const DEFAULT_OPTIONS = {
     trim: true,
     lineEndings: "preserve",
+    trimLines: false,
     collapseSpaces: true,
     spaces: "halfwidth",
     digits: "halfwidth",
@@ -93,6 +94,14 @@ export function normalizeJaInput(input, options = {}) {
     }
     if (opts.lineEndings === "lf") {
         value = value.replace(/\r\n?/g, "\n");
+    }
+    if (opts.trimLines) {
+        value = value.replace(/[ \t]+/g, (spaces, index, input) => {
+            const before = input.charAt(index - 1);
+            const after = input.charAt(index + spaces.length);
+            const touchesLineBoundary = !before || !after || /[\r\n]/.test(before + after);
+            return touchesLineBoundary ? "" : spaces;
+        });
     }
     if (opts.collapseSpaces) {
         const whitespace = opts.collapseSpaces === "horizontal" ? /[ \t]+/g : /[ \t\r\n]+/g;

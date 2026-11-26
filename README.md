@@ -19,6 +19,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 日本語入力で混ざりがちなハイフン類を `-` に統一
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
 - CRLF と単独の CR を必要に応じて LF に統一
+- 複数行の入力で、各行の前後にあるスペースとタブを必要に応じて削除
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 半角カタカナを必要に応じて全角に変換
 - フリガナなどの文字種をひらがなかカタカナに統一
@@ -87,8 +88,9 @@ normalizeJaInput("やまだ　ﾀﾛｳ", options)
 | 8 | [`hyphens`](#hyphens) | `"ascii"` |
 | 9 | [`punctuation`](#punctuation) | `"preserve"` |
 | 10 | [`lineEndings`](#lineendings) | `"preserve"` |
-| 11 | [`collapseSpaces`](#collapsespaces) | `true` |
-| 12 | [`trim`](#trim) | `true` |
+| 11 | [`trimLines`](#trimlines) | `false` |
+| 12 | [`collapseSpaces`](#collapsespaces) | `true` |
+| 13 | [`trim`](#trim) | `true` |
 
 手順7は、濁点・半濁点の結合と文字種変換の両方を有効にした場合に実行します。
 
@@ -117,6 +119,24 @@ normalizeJaInput("東京都　港区\r\n\r\n芝公園　１丁目\r１０１号�
   lineEndings: "lf",
 })
 // => "東京都 港区\n\n芝公園 1丁目\n101号室"
+```
+
+### `trimLines`
+
+Type: `boolean`
+
+`true` にすると、各行の先頭と末尾にある半角スペースとタブを削除します。行の区切りは `\r\n`・`\r`・`\n` で、空白だけの行は空行になります。全角スペースなども各行の前後から取り除くには、先に `spaces` で半角スペースへ変換します。ノーブレークスペースも対象にする場合は `spaces: "ascii"` を使います。
+
+行のトリムは `lineEndings` の後、`collapseSpaces` の前に行います。途中の改行を残すには `collapseSpaces: "horizontal"` または `false` を使います。文字列の先頭・末尾にある改行も残す場合は `trim: false` を併用します。
+
+単独の `\r` と `\n` の間に空白だけの行があると、空白の削除後に両者が隣り合い、`\r\n` として扱われます。この場合も空行を残すには `lineEndings: "lf"` を指定します。
+
+```ts
+normalizeJaInput("　東京都　港区　\r\n \t\r\n　芝公園　１丁目　", {
+  ...jaInputPresets.multilineAddress,
+  trimLines: true,
+})
+// => "東京都 港区\r\n\r\n芝公園 1丁目"
 ```
 
 ### `collapseSpaces`
@@ -331,6 +351,8 @@ normalizeJaInput("東京都\u00A0港区\n芝公園\u202F１丁目", {
 「Mixed spaces」の例では、入力欄の下に3種類の空白がコードポイント付きで表示されます。「Space conversion」で「Fullwidth + no-break spaces」を選ぶと、3種類とも半角スペースに変換されます。
 
 「Mixed line endings」の例を選ぶと、複数行住所のプリセットが適用され、入力と出力の改行コードが `\r\n`・`\r`・`\n` の表記で表示されます。「Line endings」を「Normalize to LF」に切り替えると、出力の改行が `\n` にそろいます。
+
+「Padded address」の例で「trim each line」をオンにすると、各行の前後にあった空白が消えます。途中の空行は出力に残ります。
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 

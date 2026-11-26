@@ -184,6 +184,10 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                       <label class="form-check-label" for="trim">trim</label>
                     </div>
                     <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" id="trimLines" />
+                      <label class="form-check-label" for="trimLines">trim each line</label>
+                    </div>
+                    <div class="form-check form-switch">
                       <input class="form-check-input" type="checkbox" id="katakana" />
                       <label class="form-check-label" for="katakana">fullwidth katakana</label>
                     </div>
@@ -276,6 +280,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="か&#x3099;く">Combining mark</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="山田&#x3000;&#x00A0;&#x202F;太郎">Mixed spaces</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="東京都　港区&#13;&#10;&#13;&#10;芝公園　１丁目&#13;１０１号室&#10;受付">Mixed line endings</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="&#32;&#32;東京都&#32;港区&#32;&#32;&#10;&#9;&#10;&#32;&#32;芝公園&#32;１丁目&#32;&#32;">Padded address</button>
                   </div>
                 </div>
               </div>
@@ -350,6 +355,7 @@ normalizeJaInput("やまだ　ﾀﾛｳ", {
 normalizeJaInput(input: string, options?: {
   trim?: boolean
   lineEndings?: "preserve" | "lf"
+  trimLines?: boolean
   collapseSpaces?: boolean | "horizontal"
   spaces?: "preserve" | "halfwidth" | "ascii"
   digits?: "preserve" | "halfwidth"
@@ -417,6 +423,7 @@ normalizeJaInput(input: string, options?: {
       const kanaScript = document.getElementById("kanaScript")
       const checkboxOptions = [
         ["trim", false, true],
+        ["trimLines", false, true],
         ["digits", "preserve", "halfwidth"],
         ["alphabets", "preserve", "halfwidth"],
         ["katakana", "preserve", "fullwidth"],
