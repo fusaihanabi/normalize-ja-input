@@ -242,6 +242,32 @@ jaInputPresets.phone.hyphens = "between-digits"
     '{"__proto__":"ＡＢＣ","":-0}',
   )
 
+  const multiRecord = record.replace('"note":', '"phone" : "０９０ー１２３４", "note":')
+  const normalizedMultiRecord = normalizedRecord.replace('"note":', '"phone" : "090-1234", "note":')
+  const partlyChangedRecord = unchangedRecord.replace(/}$/, ',"phone":"０８０ー５６７８"}')
+  const unchangedMultiRecord = partlyChangedRecord.replace('"０８０ー５６７８"', '"080-5678"')
+  // Preset flags are in a different order from the fields in the source record.
+  const fieldPresetArgs = ["--jsonl", "--field-preset", "phone=phone", "--field-preset", "furigana=furigana"]
+  const multiInput = `${multiRecord}\r\n${partlyChangedRecord}\n${unchangedMultiRecord}`
+  expectCliOutput(
+    fieldPresetArgs,
+    `${normalizedMultiRecord}\n${unchangedMultiRecord}\n${unchangedMultiRecord}\n`,
+    multiInput,
+  )
+  expectCliOutput(
+    [...fieldPresetArgs, "--changes"],
+    `{"value":${normalizedMultiRecord},"changes":{"furigana":["spaces","katakana"],"phone":["digits","hyphens"]}}\n`
+      + `{"value":${unchangedMultiRecord},"changes":{"furigana":[],"phone":["digits","hyphens"]}}\n`
+      + `{"value":${unchangedMultiRecord},"changes":{"furigana":[],"phone":[]}}\n`,
+    multiInput,
+  )
+  expectCliOutput(
+    ["--jsonl", "--field-preset", "team=name=furigana", "--field-preset=__proto__=phone", "--changes"],
+    '{"value":{"team=name":"ヤマダ","__proto__":"090-1234","id":9007199254740993123456789},'
+      + '"changes":{"team=name":["katakana"],"__proto__":["digits","hyphens"]}}\n',
+    '{"team=name":"ﾔﾏﾀﾞ","__proto__":"０９０ー１２３４","id":9007199254740993123456789}',
+  )
+
   const help = runCli(["--help"])
   assert.ifError(help.error)
   assert.equal(help.status, 0, help.stderr)
@@ -250,6 +276,7 @@ jaInputPresets.phone.hyphens = "between-digits"
   assert.match(help.stdout, /phone, furigana, email, multilineAddress/)
   assert.match(help.stdout, /--jsonl/)
   assert.match(help.stdout, /--field <name>/)
+  assert.match(help.stdout, /--field-preset <name>=<preset>/)
 
   for (const [args, message] of [
     [["--unknown"], /Unknown option/],
@@ -259,6 +286,12 @@ jaInputPresets.phone.hyphens = "between-digits"
     [["--jsonl", ""], /--jsonl reads standard input/],
     [["--field", "furigana"], /--field requires --jsonl/],
     [["--jsonl", "--field"], /--field/],
+    [["--field-preset", "phone=phone"], /--field-preset requires --jsonl/],
+    [["--jsonl", "--field-preset", "phone"], /Expected --field-preset <name>=<preset>/],
+    [["--jsonl", "--field-preset", "phone=constructor"], /Unknown preset "constructor" for field "phone"/],
+    [[...fieldPresetArgs, "--field-preset", "phone=furigana"], /Duplicate --field-preset for field "phone"/],
+    [[...fieldPresetArgs, "--field", "phone"], /cannot be combined with --field or --preset/],
+    [[...fieldPresetArgs, "--preset", "phone"], /cannot be combined with --field or --preset/],
   ]) {
     const failure = runCli(args)
     assert.ifError(failure.error)
@@ -295,6 +328,18 @@ jaInputPresets.phone.hyphens = "between-digits"
     assert.match(failure.stderr, message)
   }
 
+  for (const [badRecord, message] of [
+    ['{"furigana":"ﾔﾏﾀﾞ","meta":{"phone":"０９０ー１２３４"}}', /Line 2 is missing field "phone"/],
+    ['{"furigana":"ﾔﾏﾀﾞ","phone":9007199254740993123456789}', /Line 2 field "phone" must contain a JSON string/],
+    ['{"furigana":"ﾔﾏﾀﾞ","phone":"０９０","\\u0070hone":"０８０"}', /Line 2 contains duplicate field "phone"/],
+  ]) {
+    const failure = runCli(fieldPresetArgs, `${multiRecord}\r\n${badRecord}\n${partlyChangedRecord}\n`)
+    assert.ifError(failure.error)
+    assert.equal(failure.status, 2, failure.stderr)
+    assert.equal(failure.stdout, `${normalizedMultiRecord}\n`)
+    assert.match(failure.stderr, message)
+  }
+
   await expectStreamingJsonlOutput(
     ["--jsonl"],
     ['"　山田　太郎　"\r\n', '"２件目"'],
@@ -304,6 +349,11 @@ jaInputPresets.phone.hyphens = "between-digits"
     fieldArgs,
     [`${record}\r\n`, unchangedRecord],
     [normalizedRecord, unchangedRecord],
+  )
+  await expectStreamingJsonlOutput(
+    fieldPresetArgs,
+    [`${multiRecord}\r\n`, partlyChangedRecord],
+    [normalizedMultiRecord, unchangedMultiRecord],
   )
   console.log("Packed package passed runtime import, public type, and CLI checks.")
 } finally {

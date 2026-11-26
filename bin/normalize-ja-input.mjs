@@ -72,53 +72,93 @@ function endOfJsonValue(text, start) {
 
 // JSON.parse has already validated the record. Walk its top-level members
 // to recover the original offsets without serializing the other values.
-function findFieldRanges(text, field) {
-  const ranges = []
+function findFieldRanges(text, fields) {
+  const ranges = new Map()
   let nameStart = skipJsonWhitespace(text, skipJsonWhitespace(text, 0) + 1)
 
   while (text[nameStart] !== "}") {
     const nameEnd = endOfJsonString(text, nameStart)
     const valueStart = skipJsonWhitespace(text, skipJsonWhitespace(text, nameEnd) + 1)
     const valueEnd = endOfJsonValue(text, valueStart)
-    if (JSON.parse(text.slice(nameStart, nameEnd)) === field) {
-      ranges.push([valueStart, valueEnd])
-      if (ranges.length === 2) break
+    const field = JSON.parse(text.slice(nameStart, nameEnd))
+    if (fields.has(field)) {
+      if (ranges.has(field)) {
+        return { error: `contains duplicate field ${JSON.stringify(field)}.` }
+      }
+      ranges.set(field, [valueStart, valueEnd])
     }
     const separator = skipJsonWhitespace(text, valueEnd)
     if (text[separator] === "}") break
     nameStart = skipJsonWhitespace(text, separator + 1)
   }
-  return ranges
+  return { ranges }
 }
 
-function normalizeJsonlField(text, field, options, includeChanges) {
-  const ranges = findFieldRanges(text, field)
-  if (ranges.length === 0) {
-    return { error: `is missing field ${JSON.stringify(field)}.` }
-  }
-  if (ranges.length > 1) {
-    return { error: `contains duplicate field ${JSON.stringify(field)}.` }
+function normalizeJsonlFields(text, fields, includeChanges, singleField) {
+  const { ranges, error } = findFieldRanges(text, fields)
+  if (error) return { error }
+
+  for (const field of fields.keys()) {
+    const range = ranges.get(field)
+    if (!range) {
+      return { error: `is missing field ${JSON.stringify(field)}.` }
+    }
+    if (text[range[0]] !== '"') {
+      return { error: `field ${JSON.stringify(field)} must contain a JSON string.` }
+    }
   }
 
-  const [[start, end]] = ranges
-  if (text[start] !== '"') {
-    return { error: `field ${JSON.stringify(field)} must contain a JSON string.` }
+  const parts = []
+  const changes = []
+  let copiedUntil = 0
+  // The ranges are in source order, so each offset refers to the unchanged input.
+  for (const [field, [start, end]] of ranges) {
+    const input = JSON.parse(text.slice(start, end))
+    const options = fields.get(field)
+    const result = includeChanges
+      ? normalizeJaInputWithChanges(input, options)
+      : { value: normalizeJaInput(input, options) }
+    if (includeChanges) {
+      changes.push([field, result.changes])
+    }
+    if (result.value !== input) {
+      parts.push(text.slice(copiedUntil, start), JSON.stringify(result.value))
+      copiedUntil = end
+    }
   }
-  const input = JSON.parse(text.slice(start, end))
-  const result = includeChanges
-    ? normalizeJaInputWithChanges(input, options)
-    : { value: normalizeJaInput(input, options) }
-  const record = result.value === input
-    ? text
-    : text.slice(0, start) + JSON.stringify(result.value) + text.slice(end)
-  const output = includeChanges
-    ? `{"value":${record},"changes":${JSON.stringify(result.changes)}}`
-    : record
-  return { output }
+
+  const record = parts.join("") + text.slice(copiedUntil)
+  if (!includeChanges) return { output: record }
+
+  const reportedChanges = singleField ? changes[0][1] : Object.fromEntries(changes)
+  return { output: `{"value":${record},"changes":${JSON.stringify(reportedChanges)}}` }
 }
 
-async function normalizeJsonl(input, options, includeChanges, field) {
+function parseFieldPresets(assignments) {
+  const fields = new Map()
+  for (const assignment of assignments) {
+    const separator = assignment.lastIndexOf("=")
+    if (separator === -1) {
+      return { error: "Expected --field-preset <name>=<preset>." }
+    }
+
+    const field = assignment.slice(0, separator)
+    const preset = assignment.slice(separator + 1)
+    if (!Object.hasOwn(jaInputPresets, preset)) {
+      return { error: `Unknown preset ${JSON.stringify(preset)} for field ${JSON.stringify(field)}. Choose from ${presets}.` }
+    }
+    if (fields.has(field)) {
+      return { error: `Duplicate --field-preset for field ${JSON.stringify(field)}.` }
+    }
+    fields.set(field, jaInputPresets[preset])
+  }
+  return { fields }
+}
+
+async function normalizeJsonl(input, { options, includeChanges, field, fieldPresets }) {
   const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true })
+  const singleField = field !== undefined
+  const fields = singleField ? new Map([[field, options]]) : fieldPresets
   let lineNumber = 0
 
   for await (const line of readLines(input)) {
@@ -139,12 +179,13 @@ async function normalizeJsonl(input, options, includeChanges, field) {
       return
     }
 
-    if (field !== undefined) {
+    if (fields) {
       if (value === null || typeof value !== "object" || Array.isArray(value)) {
-        usageError(`Line ${lineNumber} must contain a JSON object when using --field.`)
+        const option = singleField ? "--field" : "--field-preset"
+        usageError(`Line ${lineNumber} must contain a JSON object when using ${option}.`)
         return
       }
-      const { output, error } = normalizeJsonlField(text, field, options, includeChanges)
+      const { output, error } = normalizeJsonlFields(text, fields, includeChanges, singleField)
       if (error) {
         usageError(`Line ${lineNumber} ${error}`)
         return
@@ -175,6 +216,7 @@ async function main() {
         changes: { type: "boolean" },
         jsonl: { type: "boolean" },
         field: { type: "string" },
+        "field-preset": { type: "string", multiple: true },
         help: { type: "boolean" },
       },
     })
@@ -187,6 +229,7 @@ async function main() {
   if (values.help) {
     process.stdout.write(`${command} [--preset <name>] [--changes] [--] [text]
 ${command} [--preset <name>] [--changes] --jsonl [--field <name>]
+${command} [--changes] --jsonl --field-preset <name>=<preset> [--field-preset <name>=<preset> ...]
 
 Normalize one text argument or read UTF-8 text from standard input.
 
@@ -194,13 +237,32 @@ Normalize one text argument or read UTF-8 text from standard input.
   --changes        Print the result and changes as JSON
   --jsonl          Normalize one JSON record per line from standard input
   --field <name>   Normalize one top-level string field in each JSON object with --jsonl
+  --field-preset   Use a preset for each named field with --jsonl (repeatable)
   --help           Show this help
   --               Treat the following text as an argument
 `)
     return
   }
 
-  const { preset, field } = values
+  const { preset, field, "field-preset": fieldPresetArgs } = values
+  let fieldPresets
+  if (fieldPresetArgs !== undefined) {
+    if (!values.jsonl) {
+      usageError("--field-preset requires --jsonl.")
+      return
+    }
+    if (field !== undefined || preset !== undefined) {
+      usageError("--field-preset cannot be combined with --field or --preset.")
+      return
+    }
+    const { fields, error } = parseFieldPresets(fieldPresetArgs)
+    if (error) {
+      usageError(error)
+      return
+    }
+    fieldPresets = fields
+  }
+
   if (preset !== undefined && !Object.hasOwn(jaInputPresets, preset)) {
     usageError(`Unknown preset "${preset}". Choose from ${presets}.`)
     return
@@ -219,7 +281,7 @@ Normalize one text argument or read UTF-8 text from standard input.
       usageError("Pipe UTF-8 JSON Lines to standard input when using --jsonl.")
       return
     }
-    await normalizeJsonl(process.stdin, options, values.changes, field)
+    await normalizeJsonl(process.stdin, { options, includeChanges: values.changes, field, fieldPresets })
     return
   }
 
