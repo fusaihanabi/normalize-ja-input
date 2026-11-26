@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process"
+import assert from "node:assert/strict"
+import { execFileSync, spawnSync } from "node:child_process"
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join } from "node:path"
@@ -15,6 +16,28 @@ const consumer = mkdtempSync(join(root, ".test-package-"))
 const cache = join(consumer, "npm-cache")
 const runNode = (args, cwd = consumer) =>
   execFileSync(process.execPath, args, { cwd, encoding: "utf8" })
+
+function runCli(args, input = "") {
+  const options = { cwd: consumer, input, encoding: "utf8" }
+  if (process.platform === "win32") {
+    // cmd.exe runs the npm shim with the fixed arguments used by these tests.
+    const shim = '".\\node_modules\\.bin\\normalize-ja-input.cmd"'
+    const command = [shim, ...args.map(arg => `"${arg}"`)].join(" ")
+    return spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", `"${command}"`], {
+      ...options,
+      windowsVerbatimArguments: true,
+    })
+  }
+  return spawnSync(join(consumer, "node_modules", ".bin", "normalize-ja-input"), args, options)
+}
+
+function expectCliOutput(args, output, input) {
+  const result = runCli(args, input)
+  assert.ifError(result.error)
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stderr, "")
+  assert.equal(result.stdout, output)
+}
 
 try {
   // A publish dry run still needs real artifacts inside this temporary consumer.
@@ -122,7 +145,43 @@ jaInputPresets.phone.hyphens = "between-digits"
     tsc, "--noEmit", "--strict", "--module", "NodeNext",
     "--typeRoots", "./node_modules/@types", "types.mts",
   ])
-  console.log("Packed package passed runtime import and public type checks.")
+
+  expectCliOutput(["　ＡＢＣ１２３　"], "ABC123")
+  expectCliOutput(
+    ["--preset", "multilineAddress"],
+    "東京都 港区\r\n\r\n芝公園 1丁目",
+    "東京都　港区\r\n\r\n芝公園　１丁目\r\n",
+  )
+  expectCliOutput(
+    ["--preset", "phone", "--changes", "　０９０ー１２３４　"],
+    '{"value":"090-1234","changes":["spaces","digits","hyphens","trim"]}\n',
+    "ignored standard input",
+  )
+  expectCliOutput(["--changes", ""], '{"value":"","changes":[]}\n', "ignored standard input")
+  expectCliOutput(["--changes"], '{"value":"","changes":[]}\n')
+  expectCliOutput(["--", "--help"], "--help")
+
+  const help = runCli(["--help"])
+  assert.ifError(help.error)
+  assert.equal(help.status, 0, help.stderr)
+  assert.equal(help.stderr, "")
+  assert.match(help.stdout, /normalize-ja-input \[--preset <name>\]/)
+  assert.match(help.stdout, /phone, furigana, email, multilineAddress/)
+
+  for (const [args, message] of [
+    [["--unknown"], /Unknown option/],
+    [["--preset"], /--preset/],
+    [["--preset", "constructor", "入力"], /Unknown preset "constructor"/],
+    [["先頭", "末尾"], /Expected at most one text argument/],
+  ]) {
+    const failure = runCli(args)
+    assert.ifError(failure.error)
+    assert.equal(failure.status, 2, failure.stderr)
+    assert.equal(failure.stdout, "")
+    assert.match(failure.stderr, message)
+  }
+
+  console.log("Packed package passed runtime import, public type, and CLI checks.")
 } finally {
   const resolved = realpathSync(consumer)
   if (resolved !== consumer || dirname(resolved) !== root) {
