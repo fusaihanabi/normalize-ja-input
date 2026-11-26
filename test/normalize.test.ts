@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { jaInputPresets, normalizeJaInput } from "../src/index"
+import { jaInputPresets, normalizeJaInput, normalizeJaInputWithChanges } from "../src/index"
 
 describe("normalizeJaInput", () => {
   it("trims and normalizes full-width spaces", () => {
@@ -300,6 +300,63 @@ describe("normalizeJaInput", () => {
     })).toBe("\n山田 太郎\r\n東京都 港区\n")
     expect(normalizeJaInput("\n山田\n太郎\n", { collapseSpaces: "horizontal" })).toBe("山田\n太郎")
     expect(normalizeJaInput("山田\n太郎")).toBe("山田 太郎")
+  })
+})
+
+describe("normalizeJaInputWithChanges", () => {
+  it("omits enabled options that leave the input unchanged", () => {
+    expect(normalizeJaInputWithChanges("山田 太郎", {
+      collapseSpaces: true,
+      kanaMarks: "compose",
+    })).toEqual({ value: "山田 太郎", changes: [] })
+    expect(normalizeJaInputWithChanges("")).toEqual({ value: "", changes: [] })
+  })
+
+  it("reports only the phone preset options that changed the input", () => {
+    expect(normalizeJaInputWithChanges("　０９０ー１２３４　", jaInputPresets.phone)).toEqual({
+      value: "090-1234",
+      changes: ["spaces", "digits", "hyphens", "trim"],
+    })
+  })
+
+  it("reports all applied changes in order and matches normalizeJaInput", () => {
+    const input = "\r\n  ａｂ０９０ー１２３４＠　ﾊﾟﾝ か\u3099  やまだ \r  ｶﾞ \n"
+    const options = {
+      ...jaInputPresets.multilineAddress,
+      spaces: "ascii",
+      katakana: "fullwidth",
+      kanaMarks: "compose",
+      kanaScript: "katakana",
+      hyphens: "between-digits",
+      punctuation: "ascii",
+      lineEndings: "lf",
+      trimLines: true,
+    } as const
+    const result = normalizeJaInputWithChanges(input, options)
+    expect(result).toEqual({
+      value: "ab090-1234@ パン ガ ヤマダ\nガ",
+      changes: [
+        "spaces", "digits", "alphabets", "katakana", "kanaMarks", "kanaScript",
+        "hyphens", "punctuation", "lineEndings", "trimLines", "collapseSpaces", "trim",
+      ],
+    })
+    expect(result.value).toBe(normalizeJaInput(input, options))
+  })
+
+  it("records kana marks once when both composition passes change the input", () => {
+    const options = { kanaMarks: "compose", kanaScript: "katakana" } as const
+    expect(normalizeJaInputWithChanges("か\u3099 わ\u3099", options)).toEqual({
+      value: "ガ ヷ",
+      changes: ["kanaMarks", "kanaScript"],
+    })
+  })
+
+  it("records kana marks after the script if only the second pass changes the input", () => {
+    const options = { kanaMarks: "compose", kanaScript: "katakana" } as const
+    expect(normalizeJaInputWithChanges("わ\u3099", options)).toEqual({
+      value: "ヷ",
+      changes: ["kanaScript", "kanaMarks"],
+    })
   })
 })
 

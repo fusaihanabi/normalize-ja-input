@@ -20,6 +20,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 - 数字間のハイフンだけを変換したり、改行を残して空白をまとめたりする設定に対応
 - CRLF と単独の CR を必要に応じて LF に統一
 - 複数行の入力で、各行の前後にあるスペースとタブを必要に応じて削除
+- 整形結果と、実際に文字列を変えた設定名を取得
 - `＠`、`．`、`＿`、`＋` を必要に応じて半角に変換
 - 半角カタカナを必要に応じて全角に変換
 - フリガナなどの文字種をひらがなかカタカナに統一
@@ -69,10 +70,30 @@ normalizeJaInput("やまだ　ﾀﾛｳ", options)
 | エクスポート | 用途 |
 | --- | --- |
 | `normalizeJaInput(input, options?)` | 文字列を受け取り、整形後の文字列を返します。 |
-| `NormalizeJaInputOptions` | 第2引数の型です。各項目は省略できます。 |
+| `normalizeJaInputWithChanges(input, options?)` | 整形後の文字列と、実際に変更を加えた設定名を返します。 |
+| `NormalizeJaInputOptions` | 両関数の第2引数の型です。各項目は省略できます。 |
+| `NormalizeJaInputResult` | `normalizeJaInputWithChanges` の戻り値の型です。 |
 | `jaInputPresets` | 入力欄ごとの読み取り専用オプションです。 |
 
 パッケージは ESM 形式で、TypeScript の型定義を同梱しています。
+
+### 変更の内訳を取得する
+
+```ts
+import { jaInputPresets, normalizeJaInputWithChanges } from "normalize-ja-input"
+
+normalizeJaInputWithChanges("　０９０ー１２３４　", jaInputPresets.phone)
+// { value: "090-1234", changes: ["spaces", "digits", "hyphens", "trim"] }
+```
+
+`NormalizeJaInputResult` の `value` は、同じ入力と設定で `normalizeJaInput` を呼んだ結果と一致します。`changes` は `(keyof NormalizeJaInputOptions)[]` で、各処理の前後で文字列が変わった設定名を、最初に変更が起きた順に返します。有効な設定でも文字列が変わらなければ一覧に入りません。変更がなければ `[]` を返します。
+
+`kanaMarks` が文字種変換の前後で両方効いた場合も、設定名は1回だけ入ります。たとえば `"わ\u3099"` をカタカナにそろえる場合は、`ワ` に変換してから濁点が結合されます。
+
+```ts
+normalizeJaInputWithChanges("わ\u3099", { kanaScript: "katakana", kanaMarks: "compose" })
+// { value: "ヷ", changes: ["kanaScript", "kanaMarks"] }
+```
 
 ## オプションの既定値と処理順
 
@@ -352,7 +373,7 @@ normalizeJaInput("東京都\u00A0港区\n芝公園\u202F１丁目", {
 
 「Mixed line endings」の例を選ぶと、複数行住所のプリセットが適用され、入力と出力の改行コードが `\r\n`・`\r`・`\n` の表記で表示されます。「Line endings」を「Normalize to LF」に切り替えると、出力の改行が `\n` にそろいます。
 
-「Padded address」の例で「trim each line」をオンにすると、各行の前後にあった空白が消えます。途中の空行は出力に残ります。
+出力欄の「変更した設定」に、実際に効いた設定名が並びます。「Padded address」の例で「trim each line」をオンにすると、行ごとの空白を取り除く `trimLines` と、入力全体の前後の改行を取り除く `trim` の両方を確認できます。途中の空行は出力に残ります。
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 

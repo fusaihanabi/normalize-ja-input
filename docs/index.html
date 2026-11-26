@@ -261,6 +261,9 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                 <p class="small text-secondary mt-2 mb-0">
                   Code points (input → output) <span id="demoCodePoints"></span>
                 </p>
+                <p class="small text-secondary mt-2 mb-0">
+                  変更した設定 <code id="demoChanges"></code>
+                </p>
                 <div id="demoLineEndings" class="small text-secondary mt-2" hidden>
                   <div class="fw-semibold">Line endings</div>
                   <div>Input <code id="demoInputEndings"></code></div>
@@ -280,7 +283,7 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="か&#x3099;く">Combining mark</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-value="山田&#x3000;&#x00A0;&#x202F;太郎">Mixed spaces</button>
                     <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="東京都　港区&#13;&#10;&#13;&#10;芝公園　１丁目&#13;１０１号室&#10;受付">Mixed line endings</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="&#32;&#32;東京都&#32;港区&#32;&#32;&#10;&#9;&#10;&#32;&#32;芝公園&#32;１丁目&#32;&#32;">Padded address</button>
+                    <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="&#10;&#32;&#32;東京都&#32;港区&#32;&#32;&#10;&#9;&#10;&#32;&#32;芝公園&#32;１丁目&#32;&#32;&#10;">Padded address</button>
                   </div>
                 </div>
               </div>
@@ -344,13 +347,16 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
             </div>
             <div class="col-lg-7">
               <div class="code-card p-4">
-                <pre><code>import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
+                <pre><code>import { jaInputPresets, normalizeJaInput, normalizeJaInputWithChanges } from "normalize-ja-input"
 
 normalizeJaInput("やまだ　ﾀﾛｳ", {
   ...jaInputPresets.furigana,
   kanaScript: "katakana",
 })
 // "ヤマダ タロウ"
+
+normalizeJaInputWithChanges("　０９０ー１２３４　", jaInputPresets.phone)
+// { value: "090-1234", changes: ["spaces", "digits", "hyphens", "trim"] }
 
 normalizeJaInput(input: string, options?: {
   trim?: boolean
@@ -405,11 +411,12 @@ normalizeJaInput(input: string, options?: {
 
     <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
     <script type="module">
-      import { jaInputPresets, normalizeJaInput } from "./index.js"
+      import { jaInputPresets, normalizeJaInputWithChanges } from "./index.js"
 
       const demoInput = document.getElementById("demoInput")
       const demoOutput = document.getElementById("demoOutput")
       const demoCodePoints = document.getElementById("demoCodePoints")
+      const demoChanges = document.getElementById("demoChanges")
       const demoSpacePreview = document.getElementById("demoSpacePreview")
       const demoSpaceLabels = document.getElementById("demoSpaceLabels")
       const demoLineEndings = document.getElementById("demoLineEndings")
@@ -458,11 +465,12 @@ normalizeJaInput(input: string, options?: {
 
       function renderDemo() {
         const input = exampleInput ?? demoInput.value
-        const output = normalizeJaInput(input, getOptions())
+        const { value: output, changes } = normalizeJaInputWithChanges(input, getOptions())
         normalizedOutput = output
         // Render standalone CR as a line break while preserving the original clipboard text.
         demoOutput.textContent = output.replace(/\r\n?/g, "\n")
         demoCodePoints.textContent = `${Array.from(input).length} → ${Array.from(output).length}`
+        demoChanges.textContent = changes.join(" → ") || "変更なし"
         const labeledInput = input.replace(/[\u3000\u00a0\u202f]/g, space => {
           const codePoint = space.codePointAt(0).toString(16).toUpperCase().padStart(4, "0")
           return `[U+${codePoint}]`

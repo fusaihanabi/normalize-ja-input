@@ -34,7 +34,7 @@ try {
 
   writeFileSync(join(consumer, "runtime.mjs"), `
 import assert from "node:assert/strict"
-import { jaInputPresets, normalizeJaInput } from "normalize-ja-input"
+import { jaInputPresets, normalizeJaInput, normalizeJaInputWithChanges } from "normalize-ja-input"
 
 assert.equal(normalizeJaInput("ﾔﾏﾀﾞ"), "ﾔﾏﾀﾞ")
 assert.equal(normalizeJaInput("コーヒー"), "コ-ヒ-")
@@ -67,14 +67,26 @@ assert.equal(
   }),
   "東京都 港区\\r\\n\\r\\n芝公園 1丁目",
 )
+assert.deepEqual(normalizeJaInputWithChanges("　０９０ー１２３４　", jaInputPresets.phone), {
+  value: "090-1234",
+  changes: ["spaces", "digits", "hyphens", "trim"],
+})
 `)
   runNode(["runtime.mjs"])
 
   writeFileSync(join(consumer, "types.mts"), `
-import { jaInputPresets, normalizeJaInput, type NormalizeJaInputOptions } from "normalize-ja-input"
+import {
+  jaInputPresets, normalizeJaInput, normalizeJaInputWithChanges,
+  type NormalizeJaInputOptions, type NormalizeJaInputResult,
+} from "normalize-ja-input"
 
 const options: NormalizeJaInputOptions = { katakana: "fullwidth" }
 const normalized: string = normalizeJaInput("ﾊﾟﾝ", options)
+const result: NormalizeJaInputResult = normalizeJaInputWithChanges("ﾊﾟﾝ", options)
+const value: string = result.value
+const changes: (keyof NormalizeJaInputOptions)[] = result.changes
+// @ts-expect-error Changes must name normalization options.
+changes.push("unknown")
 // @ts-expect-error The public option only accepts "preserve" and "fullwidth".
 normalizeJaInput("ﾊﾟﾝ", { katakana: "halfwidth" })
 normalizeJaInput("０９０ー１２３４", jaInputPresets.phone)

@@ -46,69 +46,84 @@ function composeKanaMarks(value) {
  * ```
  */
 export function normalizeJaInput(input, options = {}) {
+    return normalize(input, options);
+}
+/** Normalize input and report which options changed it. */
+export function normalizeJaInputWithChanges(input, options = {}) {
+    const changes = [];
+    const value = normalize(input, options, changes);
+    return { value, changes };
+}
+function normalize(input, options, changes) {
     const opts = { ...DEFAULT_OPTIONS, ...options };
     let value = input;
+    function apply(option, nextValue) {
+        if (changes && value !== nextValue && !changes.includes(option)) {
+            changes.push(option);
+        }
+        value = nextValue;
+    }
     if (opts.spaces === "ascii") {
-        value = value.replace(/[\u3000\u00a0\u202f]/g, " ");
+        apply("spaces", value.replace(/[\u3000\u00a0\u202f]/g, " "));
     }
     else if (opts.spaces === "halfwidth") {
-        value = value.replace(/\u3000/g, " ");
+        apply("spaces", value.replace(/\u3000/g, " "));
     }
     if (opts.digits === "halfwidth") {
-        value = value.replace(/[０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
+        apply("digits", value.replace(/[０-９]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET)));
     }
     if (opts.alphabets === "halfwidth") {
-        value = value.replace(/[Ａ-Ｚａ-ｚ]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
+        apply("alphabets", value.replace(/[Ａ-Ｚａ-ｚ]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET)));
     }
     if (opts.katakana === "fullwidth") {
-        value = value.replace(HALFWIDTH_KATAKANA, kana => {
+        apply("katakana", value.replace(HALFWIDTH_KATAKANA, kana => {
             const normalized = kana.normalize("NFKC");
             // Preserve the original mark if it cannot combine into a single kana.
             return normalized.length === 1 ? normalized : kana[0].normalize("NFKC") + kana[1];
-        });
+        }));
     }
     const composeMarks = opts.kanaMarks === "compose";
     if (composeMarks) {
-        value = composeKanaMarks(value);
+        apply("kanaMarks", composeKanaMarks(value));
     }
     if (opts.kanaScript === "katakana") {
-        value = value.replace(/[ぁ-ゖゝゞ]/g, kana => String.fromCharCode(kana.charCodeAt(0) + KANA_SCRIPT_OFFSET));
+        apply("kanaScript", value.replace(/[ぁ-ゖゝゞ]/g, kana => String.fromCharCode(kana.charCodeAt(0) + KANA_SCRIPT_OFFSET)));
     }
     else if (opts.kanaScript === "hiragana") {
-        value = value.replace(/[ァ-ヶヽヾ]/g, kana => String.fromCharCode(kana.charCodeAt(0) - KANA_SCRIPT_OFFSET));
+        apply("kanaScript", value.replace(/[ァ-ヶヽヾ]/g, kana => String.fromCharCode(kana.charCodeAt(0) - KANA_SCRIPT_OFFSET)));
     }
     if (composeMarks && opts.kanaScript !== "preserve") {
         // Converting the base character can make an unmatched mark composable.
-        value = composeKanaMarks(value);
+        apply("kanaMarks", composeKanaMarks(value));
     }
     if (opts.hyphens === "ascii") {
-        value = value.replace(HYPHEN_LIKE_CHARS, "-");
+        apply("hyphens", value.replace(HYPHEN_LIKE_CHARS, "-"));
     }
     else if (opts.hyphens === "between-digits") {
-        value = value.replace(HYPHEN_LIKE_CHARS, (char, index, input) => DIGIT.test(input.charAt(index - 1)) && DIGIT.test(input.charAt(index + 1))
+        apply("hyphens", value.replace(HYPHEN_LIKE_CHARS, (char, index, input) => DIGIT.test(input.charAt(index - 1)) && DIGIT.test(input.charAt(index + 1))
             ? "-"
-            : char);
+            : char));
     }
     if (opts.punctuation === "ascii") {
-        value = value.replace(/[＠．＿＋]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET));
+        apply("punctuation", value.replace(/[＠．＿＋]/g, char => String.fromCharCode(char.charCodeAt(0) - FULLWIDTH_ASCII_OFFSET)));
     }
     if (opts.lineEndings === "lf") {
-        value = value.replace(/\r\n?/g, "\n");
+        apply("lineEndings", value.replace(/\r\n?/g, "\n"));
     }
     if (opts.trimLines) {
-        value = value.replace(/[ \t]+/g, (spaces, index, input) => {
+        apply("trimLines", value.replace(/[ \t]+/g, (spaces, index, input) => {
             const before = input.charAt(index - 1);
             const after = input.charAt(index + spaces.length);
             const touchesLineBoundary = !before || !after || /[\r\n]/.test(before + after);
             return touchesLineBoundary ? "" : spaces;
-        });
+        }));
     }
     if (opts.collapseSpaces) {
         const whitespace = opts.collapseSpaces === "horizontal" ? /[ \t]+/g : /[ \t\r\n]+/g;
-        value = value.replace(whitespace, " ");
+        apply("collapseSpaces", value.replace(whitespace, " "));
     }
     if (opts.trim) {
-        value = value.trim();
+        apply("trim", value.trim());
     }
     return value;
 }
