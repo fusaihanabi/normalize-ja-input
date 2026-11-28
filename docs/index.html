@@ -8,135 +8,49 @@
       name="description"
       content="normalize-ja-input is a tiny TypeScript utility for normalizing Japanese form input."
     />
-    <link
-      href="https://unpkg.com/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --brand: #2563eb;
-        --brand-soft: #eff6ff;
-        --ink: #111827;
-      }
-
-      body {
-        color: var(--ink);
-        background:
-          radial-gradient(circle at top left, #eff6ff 0, transparent 32rem),
-          linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-      }
-
-      .navbar {
-        backdrop-filter: blur(12px);
-        background: rgba(255, 255, 255, 0.82);
-      }
-
-      .hero {
-        padding: 6rem 0 4rem;
-      }
-
-      .badge-soft {
-        color: var(--brand);
-        background: var(--brand-soft);
-        border: 1px solid #bfdbfe;
-      }
-
-      .code-card {
-        background: #0f172a;
-        color: #e5e7eb;
-        border-radius: 1rem;
-        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
-      }
-
-      pre {
-        margin: 0;
-        white-space: pre-wrap;
-      }
-
-      code {
-        color: inherit;
-      }
-
-      .section {
-        padding: 4rem 0;
-      }
-
-      .feature-card,
-      .demo-card {
-        border: 1px solid #e5e7eb;
-        border-radius: 1rem;
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
-      }
-
-      .demo-output {
-        min-height: 96px;
-        background: #0f172a;
-        color: #d1fae5;
-        border-radius: 0.75rem;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        white-space: pre-wrap;
-        overflow-wrap: anywhere;
-      }
-
-      #demoSpaceLabels {
-        overflow-wrap: anywhere;
-      }
-
-      .copy-btn {
-        white-space: nowrap;
-      }
-
-      .footer {
-        border-top: 1px solid #e5e7eb;
-      }
-    </style>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg sticky-top border-bottom">
-      <div class="container">
-        <a class="navbar-brand fw-bold" href="#">normalize-ja-input</a>
+    <nav class="site-nav" aria-label="メインナビゲーション">
+      <div class="container nav-inner">
+        <a class="site-brand" href="#">normalize-ja-input</a>
         <button
-          class="navbar-toggler"
+          class="button nav-toggle"
           type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
+          aria-controls="navLinks"
           aria-expanded="false"
-          aria-label="Toggle navigation"
+          hidden
         >
-          <span class="navbar-toggler-icon"></span>
+          メニュー
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item"><a class="nav-link" href="#demo">Demo</a></li>
-            <li class="nav-item"><a class="nav-link" href="#install">Install</a></li>
-            <li class="nav-item"><a class="nav-link" href="#api">API</a></li>
-            <li class="nav-item"><a class="nav-link" href="#cdn">CDN</a></li>
-          </ul>
-        </div>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#demo">Demo</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="#api">API</a></li>
+          <li><a href="#cdn">CDN</a></li>
+          <li><a href="#related">関連ライブラリ</a></li>
+        </ul>
       </div>
     </nav>
 
     <main>
       <section class="hero">
         <div class="container">
-          <div class="row align-items-center g-5">
-            <div class="col-lg-6">
-              <span class="badge badge-soft rounded-pill px-3 py-2 mb-3">Dependency-free tiny utility</span>
-              <h1 class="display-4 fw-bold lh-1 mb-4">
-                日本語フォーム入力の<br />表記ゆれを安全に正規化。
+          <div class="hero-layout">
+            <div>
+              <h1>
+                日本語フォーム入力の<br />表記ゆれを正規化。
               </h1>
-              <p class="lead text-secondary mb-4">
-                全角数字、全角英字、全角スペース、ハイフン類をフォーム入力向けに扱いやすく整える TypeScript utility です。
+              <p class="hero-intro">
+                全角数字、全角英字、全角スペース、ハイフン類をフォーム入力向けに整える TypeScript ユーティリティです。
               </p>
-              <div class="d-flex flex-wrap gap-2">
-                <a href="#install" class="btn btn-primary btn-lg">Get started</a>
-                <a href="#demo" class="btn btn-outline-secondary btn-lg">Try demo</a>
+              <div class="actions">
+                <a href="#install" class="button button-primary">Get started</a>
+                <a href="#demo" class="button">Try demo</a>
               </div>
             </div>
-            <div class="col-lg-6">
-              <div class="code-card p-4">
+            <div>
+              <div class="code-card">
                 <pre><code>import { normalizeJaInput } from "normalize-ja-input"
 
 normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
@@ -149,26 +63,24 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 
       <section class="section" id="demo">
         <div class="container">
-          <div class="row justify-content-center mb-4">
-            <div class="col-lg-8 text-center">
-              <h2 class="fw-bold">Live demo</h2>
-              <p class="text-secondary">日本語入力で混ざりがちな文字をその場で正規化します。</p>
-            </div>
+          <div class="section-intro">
+            <h2>Live demo</h2>
+            <p>日本語入力で混ざりがちな文字をその場で正規化します。</p>
           </div>
 
-          <div class="demo-card p-4 p-lg-5">
-            <div class="row g-4">
-              <div class="col-lg-6">
-                <label for="demoInput" class="form-label fw-semibold">Input</label>
-                <textarea id="demoInput" class="form-control" rows="6">　ＴＥＬ：０９０ー１２３４ー５６７８　</textarea>
-                <div id="demoSpacePreview" class="small text-secondary mt-2" hidden>
+          <div class="demo-card">
+            <div class="demo-layout">
+              <div>
+                <label for="demoInput" class="field-label">Input</label>
+                <textarea id="demoInput" class="field-input" rows="6">　ＴＥＬ：０９０ー１２３４ー５６７８　</textarea>
+                <div id="demoSpacePreview" class="demo-meta" hidden>
                   <div>Input with space labels</div>
                   <pre id="demoSpaceLabels"></pre>
                 </div>
 
-                <div class="mt-3">
-                  <label for="demoPreset" class="form-label fw-semibold">Preset</label>
-                  <select class="form-select" id="demoPreset">
+                <div class="field-group">
+                  <label for="demoPreset" class="field-label">Preset</label>
+                  <select class="field-input" id="demoPreset">
                     <option value="custom">Custom</option>
                     <option value="phone">Phone</option>
                     <option value="furigana">Furigana</option>
@@ -177,73 +89,73 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                   </select>
                 </div>
 
-                <div class="row g-3 mt-3">
-                  <div class="col-sm-6">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="trim" checked />
-                      <label class="form-check-label" for="trim">trim</label>
+                <div class="option-grid">
+                  <div>
+                    <div class="check-option">
+                      <input type="checkbox" id="trim" checked />
+                      <label for="trim">trim</label>
                     </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="trimLines" />
-                      <label class="form-check-label" for="trimLines">trim each line</label>
+                    <div class="check-option">
+                      <input type="checkbox" id="trimLines" />
+                      <label for="trimLines">trim each line</label>
                     </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="katakana" />
-                      <label class="form-check-label" for="katakana">fullwidth katakana</label>
+                    <div class="check-option">
+                      <input type="checkbox" id="katakana" />
+                      <label for="katakana">fullwidth katakana</label>
                     </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="kanaMarks" />
-                      <label class="form-check-label" for="kanaMarks">combine kana marks</label>
-                    </div>
-                  </div>
-                  <div class="col-sm-6">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="digits" checked />
-                      <label class="form-check-label" for="digits">fullwidth digits</label>
-                    </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="alphabets" checked />
-                      <label class="form-check-label" for="alphabets">fullwidth alphabets</label>
-                    </div>
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="punctuation" />
-                      <label class="form-check-label" for="punctuation">fullwidth ＠ ． ＿ ＋</label>
+                    <div class="check-option">
+                      <input type="checkbox" id="kanaMarks" />
+                      <label for="kanaMarks">combine kana marks</label>
                     </div>
                   </div>
-                  <div class="col-sm-6">
-                    <label class="form-label" for="spaces">Space conversion</label>
-                    <select class="form-select" id="spaces">
+                  <div>
+                    <div class="check-option">
+                      <input type="checkbox" id="digits" checked />
+                      <label for="digits">fullwidth digits</label>
+                    </div>
+                    <div class="check-option">
+                      <input type="checkbox" id="alphabets" checked />
+                      <label for="alphabets">fullwidth alphabets</label>
+                    </div>
+                    <div class="check-option">
+                      <input type="checkbox" id="punctuation" />
+                      <label for="punctuation">fullwidth ＠ ． ＿ ＋</label>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="field-label" for="spaces">Space conversion</label>
+                    <select class="field-input" id="spaces">
                       <option value="halfwidth">Fullwidth spaces only</option>
                       <option value="ascii">Fullwidth + no-break spaces</option>
                       <option value="preserve">Preserve space widths</option>
                     </select>
                   </div>
-                  <div class="col-sm-6">
-                    <label class="form-label" for="lineEndings">Line endings</label>
-                    <select class="form-select" id="lineEndings">
+                  <div>
+                    <label class="field-label" for="lineEndings">Line endings</label>
+                    <select class="field-input" id="lineEndings">
                       <option value="preserve">Preserve</option>
                       <option value="lf">Normalize to LF</option>
                     </select>
                   </div>
-                  <div class="col-sm-6">
-                    <label class="form-label" for="collapseSpaces">Whitespace collapsing</label>
-                    <select class="form-select" id="collapseSpaces">
+                  <div>
+                    <label class="field-label" for="collapseSpaces">Whitespace collapsing</label>
+                    <select class="field-input" id="collapseSpaces">
                       <option value="true">Collapse spaces, tabs and line breaks</option>
                       <option value="horizontal">Collapse spaces and tabs</option>
                       <option value="false">Disable collapsing</option>
                     </select>
                   </div>
-                  <div class="col-sm-6">
-                    <label class="form-label" for="hyphens">Hyphen variants</label>
-                    <select class="form-select" id="hyphens">
+                  <div>
+                    <label class="field-label" for="hyphens">Hyphen variants</label>
+                    <select class="field-input" id="hyphens">
                       <option value="ascii">Normalize everywhere</option>
                       <option value="between-digits">Normalize between digits</option>
                       <option value="preserve">Preserve</option>
                     </select>
                   </div>
-                  <div class="col-sm-6">
-                    <label class="form-label" for="kanaScript">Kana script</label>
-                    <select class="form-select" id="kanaScript">
+                  <div>
+                    <label class="field-label" for="kanaScript">Kana script</label>
+                    <select class="field-input" id="kanaScript">
                       <option value="preserve">Preserve</option>
                       <option value="hiragana">Hiragana</option>
                       <option value="katakana">Katakana</option>
@@ -252,38 +164,38 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
                 </div>
               </div>
 
-              <div class="col-lg-6">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <label class="form-label fw-semibold mb-0">Output</label>
-                  <button class="btn btn-sm btn-outline-secondary copy-btn" id="copyOutput" type="button">Copy</button>
+              <div>
+                <div class="output-header">
+                  <span class="field-label" id="outputLabel">Output</span>
+                  <button class="button button-small" id="copyOutput" type="button">Copy</button>
                 </div>
-                <div class="demo-output p-3" id="demoOutput"></div>
-                <p class="small text-secondary mt-2 mb-0">
+                <div class="demo-output" id="demoOutput" role="region" aria-labelledby="outputLabel"></div>
+                <p class="demo-meta">
                   Code points (input → output) <span id="demoCodePoints"></span>
                 </p>
-                <p class="small text-secondary mt-2 mb-0">
+                <p class="demo-meta">
                   変更した設定 <code id="demoChanges"></code>
                 </p>
-                <div id="demoLineEndings" class="small text-secondary mt-2" hidden>
-                  <div class="fw-semibold">Line endings</div>
+                <div id="demoLineEndings" class="demo-meta" hidden>
+                  <div class="field-label">Line endings</div>
                   <div>Input <code id="demoInputEndings"></code></div>
                   <div>Output <code id="demoOutputEndings"></code></div>
                 </div>
 
-                <div class="mt-4">
-                  <p class="fw-semibold mb-2">Try examples</p>
-                  <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="　山田　太郎　">Name</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="０９０ー１２３４ー５６７８">Phone-like</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="コーヒー　０９０ー１２３４">Mixed</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="東京都　　港区&#10;芝公園　　１丁目">Multiline</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ">Email</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="ｽｰﾊﾟｰ　ﾔﾏﾀﾞ">Katakana</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="やまだ　タロウ　ﾊﾅｺ">Mixed kana</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="か&#x3099;く">Combining mark</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-value="山田&#x3000;&#x00A0;&#x202F;太郎">Mixed spaces</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="東京都　港区&#13;&#10;&#13;&#10;芝公園　１丁目&#13;１０１号室&#10;受付">Mixed line endings</button>
-                    <button class="btn btn-sm btn-outline-primary example" type="button" data-preset="multilineAddress" data-value="&#10;&#32;&#32;東京都&#32;港区&#32;&#32;&#10;&#9;&#10;&#32;&#32;芝公園&#32;１丁目&#32;&#32;&#10;">Padded address</button>
+                <div class="examples">
+                  <p class="field-label">Try examples</p>
+                  <div class="actions">
+                    <button class="button button-small button-outline example" type="button" data-value="　山田　太郎　">Name</button>
+                    <button class="button button-small button-outline example" type="button" data-value="０９０ー１２３４ー５６７８">Phone-like</button>
+                    <button class="button button-small button-outline example" type="button" data-value="コーヒー　０９０ー１２３４">Mixed</button>
+                    <button class="button button-small button-outline example" type="button" data-value="東京都　　港区&#10;芝公園　　１丁目">Multiline</button>
+                    <button class="button button-small button-outline example" type="button" data-value="ｔｅｓｔ＋１＠ｅｘａｍｐｌｅ．ｊｐ">Email</button>
+                    <button class="button button-small button-outline example" type="button" data-value="ｽｰﾊﾟｰ　ﾔﾏﾀﾞ">Katakana</button>
+                    <button class="button button-small button-outline example" type="button" data-value="やまだ　タロウ　ﾊﾅｺ">Mixed kana</button>
+                    <button class="button button-small button-outline example" type="button" data-value="か&#x3099;く">Combining mark</button>
+                    <button class="button button-small button-outline example" type="button" data-value="山田&#x3000;&#x00A0;&#x202F;太郎">Mixed spaces</button>
+                    <button class="button button-small button-outline example" type="button" data-preset="multilineAddress" data-value="東京都　港区&#13;&#10;&#13;&#10;芝公園　１丁目&#13;１０１号室&#10;受付">Mixed line endings</button>
+                    <button class="button button-small button-outline example" type="button" data-preset="multilineAddress" data-value="&#10;&#32;&#32;東京都&#32;港区&#32;&#32;&#10;&#9;&#10;&#32;&#32;芝公園&#32;１丁目&#32;&#32;&#10;">Padded address</button>
                   </div>
                 </div>
               </div>
@@ -294,24 +206,18 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 
       <section class="section" id="features">
         <div class="container">
-          <div class="row g-4">
-            <div class="col-md-4">
-              <div class="feature-card h-100 p-4">
-                <h3 class="h5 fw-bold">Form focused</h3>
-                <p class="text-secondary mb-0">電話番号、氏名、住所、IDなどの入力前処理に使いやすい小さな設計。</p>
-              </div>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h3>Form focused</h3>
+              <p>電話番号、氏名、住所、IDなどの入力前処理に使いやすい小さな設計。</p>
             </div>
-            <div class="col-md-4">
-              <div class="feature-card h-100 p-4">
-                <h3 class="h5 fw-bold">Configurable</h3>
-                <p class="text-secondary mb-0">数字間のハイフンだけをそろえる設定や、改行を残す空白圧縮を選べます。</p>
-              </div>
+            <div class="feature-card">
+              <h3>Configurable</h3>
+              <p>数字間のハイフンだけをそろえる設定や、改行を残す空白圧縮を選べます。</p>
             </div>
-            <div class="col-md-4">
-              <div class="feature-card h-100 p-4">
-                <h3 class="h5 fw-bold">Zero dependencies</h3>
-                <p class="text-secondary mb-0">Node.js、ブラウザ、フロントエンドフォームで扱いやすい依存ゼロ構成。</p>
-              </div>
+            <div class="feature-card">
+              <h3>Zero dependencies</h3>
+              <p>Node.js、ブラウザ、フロントエンドフォームで扱いやすい依存ゼロ構成。</p>
             </div>
           </div>
         </div>
@@ -319,16 +225,16 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 
       <section class="section" id="install">
         <div class="container">
-          <div class="row g-4 align-items-start">
-            <div class="col-lg-5">
-              <h2 class="fw-bold">Install</h2>
-              <p class="text-secondary">npmでインストールして、TypeScript/JavaScriptから利用できます。</p>
+          <div class="section-layout">
+            <div>
+              <h2>Install</h2>
+              <p>npmでインストールして、TypeScript/JavaScriptから利用できます。</p>
             </div>
-            <div class="col-lg-7">
-              <div class="code-card p-4 mb-3">
+            <div class="code-stack">
+              <div class="code-card">
                 <pre><code>npm install normalize-ja-input</code></pre>
               </div>
-              <div class="code-card p-4">
+              <div class="code-card">
                 <pre><code>import { normalizeJaInput } from "normalize-ja-input"
 
 const value = normalizeJaInput("　ＡＢＣー１２３　")
@@ -341,12 +247,12 @@ const value = normalizeJaInput("　ＡＢＣー１２３　")
 
       <section class="section" id="api">
         <div class="container">
-          <div class="row g-4 align-items-start">
-            <div class="col-lg-5">
-              <h2 class="fw-bold">API</h2>
+          <div class="section-layout">
+            <div>
+              <h2>API</h2>
             </div>
-            <div class="col-lg-7">
-              <div class="code-card p-4">
+            <div class="code-stack">
+              <div class="code-card">
                 <pre><code>import { jaInputPresets, normalizeJaInput, normalizeJaInputWithChanges } from "normalize-ja-input"
 
 normalizeJaInput("やまだ　ﾀﾛｳ", {
@@ -380,17 +286,26 @@ normalizeJaInput(input: string, options?: {
 
       <section class="section" id="cdn">
         <div class="container">
-          <div class="row g-4 align-items-start">
-            <div class="col-lg-5">
-              <h2 class="fw-bold">CDN</h2>
-              <p class="text-secondary">
-                npmで公開されたパッケージを、ブラウザからESモジュールとして読み込めます。
-              </p>
-            </div>
-            <div class="col-lg-7">
-              <div class="code-card p-4">
+          <div class="section-intro">
+            <h2>CDN</h2>
+            <p>npm で公開されたパッケージを、どちらの CDN からでも ES モジュールとして読み込めます。</p>
+          </div>
+          <div class="cdn-grid">
+            <div>
+              <h3>unpkg</h3>
+              <div class="code-card">
                 <pre><code>&lt;script type="module"&gt;
   import { normalizeJaInput } from "https://unpkg.com/normalize-ja-input/dist/index.js"
+
+  console.log(normalizeJaInput("　ＡＢＣー１２３　"))
+&lt;/script&gt;</code></pre>
+              </div>
+            </div>
+            <div>
+              <h3>jsDelivr</h3>
+              <div class="code-card">
+                <pre><code>&lt;script type="module"&gt;
+  import { normalizeJaInput } from "https://cdn.jsdelivr.net/npm/normalize-ja-input/dist/index.js"
 
   console.log(normalizeJaInput("　ＡＢＣー１２３　"))
 &lt;/script&gt;</code></pre>
@@ -399,17 +314,86 @@ normalizeJaInput(input: string, options?: {
           </div>
         </div>
       </section>
+
+      <section class="section" id="related">
+        <div class="container">
+          <div class="section-intro">
+            <h2>関連ライブラリ</h2>
+            <p>フォームの入力補助から確定値の検証、外部連携まで、用途に合った Fusai Hanabi OSS のライブラリを組み合わせられます。</p>
+          </div>
+          <ul class="related-grid">
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/ja-ime-utils">ja-ime-utils</a></h3>
+              <p>IME の変換確定とフォーム送信を区別し、確定後に正規化できます。</p>
+              <a href="https://fusaihanabi.github.io/ja-ime-utils/" aria-label="ja-ime-utils のライブデモ">ライブデモ</a>
+            </li>
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/ja-input-mask">ja-input-mask</a></h3>
+              <p>電話番号や郵便番号などを入力中に整形し、貼り付けやカーソル操作にも対応します。</p>
+              <a href="https://fusaihanabi.github.io/ja-input-mask/" aria-label="ja-input-mask のライブデモ">ライブデモ</a>
+            </li>
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/ja-form-validators">ja-form-validators</a></h3>
+              <p>正規化した郵便番号、電話番号、フリガナなどを検証できます。</p>
+              <a href="https://fusaihanabi.github.io/ja-form-validators/" aria-label="ja-form-validators のライブデモ">ライブデモ</a>
+            </li>
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/ja-char-check">ja-char-check</a></h3>
+              <p>保存や外部連携の前に、文字集合・文字コードの互換性やバイト数を確認できます。</p>
+              <a href="https://fusaihanabi.github.io/ja-char-check/" aria-label="ja-char-check のライブデモ">ライブデモ</a>
+            </li>
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/tiny-ja-date">tiny-ja-date</a></h3>
+              <p>日本語の日付表示や、暦日・営業日の計算に使えます。</p>
+              <a href="https://fusaihanabi.github.io/tiny-ja-date/" aria-label="tiny-ja-date のライブデモ">ライブデモ</a>
+            </li>
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/tiny-ja-money">tiny-ja-money</a></h3>
+              <p>円単位の金額を読み取り・整形し、消費税や按分を計算できます。</p>
+              <a href="https://fusaihanabi.github.io/tiny-ja-money/" aria-label="tiny-ja-money のライブデモ">ライブデモ</a>
+            </li>
+            <li class="feature-card">
+              <h3><a href="https://github.com/fusaihanabi/ja-zengin-utils">ja-zengin-utils</a></h3>
+              <p>全銀カナや総合振込の120バイト固定長ファイルを扱えます。</p>
+              <a href="https://fusaihanabi.github.io/ja-zengin-utils/" aria-label="ja-zengin-utils のライブデモ">ライブデモ</a>
+            </li>
+          </ul>
+        </div>
+      </section>
     </main>
 
-    <footer class="footer py-4">
-      <div class="container d-flex flex-column flex-md-row justify-content-between gap-2 text-secondary small">
+    <footer class="footer">
+      <div class="container footer-inner">
         <div>MIT License</div>
-        <div><a href="https://dl.fusai-hanabi.com">dl.fusai-hanabi.com</a></div>
-        <div>Made for Japanese form input.</div>
+        <div><a href="https://github.com/fusaihanabi/normalize-ja-input#readme">日本語 README</a></div>
+        <div><a href="https://github.com/fusaihanabi/normalize-ja-input/blob/main/README.en.md">English README</a></div>
+        <div><a href="https://dl.fusai-hanabi.com/">Fusai Hanabi OSS</a></div>
       </div>
     </footer>
 
-    <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <script>
+      const navToggle = document.querySelector(".nav-toggle")
+      const navLinks = document.getElementById("navLinks")
+      navToggle.hidden = false
+
+      navToggle.addEventListener("click", () => {
+        const isOpen = navToggle.getAttribute("aria-expanded") === "true"
+        navToggle.setAttribute("aria-expanded", String(!isOpen))
+      })
+
+      navLinks.addEventListener("click", event => {
+        if (event.target.closest("a")) {
+          navToggle.setAttribute("aria-expanded", "false")
+        }
+      })
+
+      navToggle.closest("nav").addEventListener("keydown", event => {
+        if (event.key === "Escape" && navToggle.getAttribute("aria-expanded") === "true") {
+          navToggle.setAttribute("aria-expanded", "false")
+          navToggle.focus()
+        }
+      })
+    </script>
     <script type="module">
       import { jaInputPresets, normalizeJaInputWithChanges } from "./index.js"
 

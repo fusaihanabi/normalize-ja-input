@@ -1,6 +1,8 @@
 # normalize-ja-input
 
-Tiny TypeScript utility for normalizing Japanese form input.
+[English](README.en.md) · [ライブデモ](https://fusaihanabi.github.io/normalize-ja-input/) · [関連ライブラリ](#関連ライブラリ)
+
+日本語フォーム入力の表記ゆれを整える、小さな TypeScript ユーティリティです。
 
 ```ts
 import { normalizeJaInput } from "normalize-ja-input"
@@ -34,6 +36,8 @@ normalizeJaInput("　ＴＥＬ：０９０ー１２３４ー５６７８　")
 ```sh
 npm install normalize-ja-input
 ```
+
+ブラウザで直接使う場合は、ES モジュールを [unpkg](https://unpkg.com/normalize-ja-input/dist/index.js) または [jsDelivr](https://cdn.jsdelivr.net/npm/normalize-ja-input/dist/index.js) から読み込めます。[デモサイトの CDN セクション](https://fusaihanabi.github.io/normalize-ja-input/#cdn) に両方の使用例があります。
 
 ## CLI
 
@@ -507,6 +511,22 @@ normalizeJaInput("東京都\u00A0港区\n芝公園\u202F１丁目", {
 
 デモを更新するときは `npm run build` で `dist/` と `docs/index.js` を生成し、GitHub Pages 用の `docs/index.js` をソースの変更と一緒にコミットします。
 
+## 関連ライブラリ
+
+日本語 IME の変換確定後に入力を正規化し、確定値の検証や用途別の処理に進めます。Fusai Hanabi OSS の各ライブラリは、必要な処理に合わせて組み合わせられます。
+
+| ライブラリ | 用途 | デモ |
+| --- | --- | --- |
+| [ja-ime-utils](https://github.com/fusaihanabi/ja-ime-utils) | 日本語 IME の変換状態を追跡し、確定時の Enter とフォームの送信を区別 | [ライブデモ](https://fusaihanabi.github.io/ja-ime-utils/) |
+| [ja-input-mask](https://github.com/fusaihanabi/ja-input-mask) | 電話番号や郵便番号などを入力中に整形し、貼り付けやカーソル操作にも対応 | [ライブデモ](https://fusaihanabi.github.io/ja-input-mask/) |
+| [ja-form-validators](https://github.com/fusaihanabi/ja-form-validators) | 正規化後の郵便番号、電話番号、フリガナなどを検証 | [ライブデモ](https://fusaihanabi.github.io/ja-form-validators/) |
+| [ja-char-check](https://github.com/fusaihanabi/ja-char-check) | 保存や外部連携の前に、文字集合・文字コードの互換性やバイト数を検査 | [ライブデモ](https://fusaihanabi.github.io/ja-char-check/) |
+| [tiny-ja-date](https://github.com/fusaihanabi/tiny-ja-date) | 日本語の日付表示、暦日・営業日の計算 | [ライブデモ](https://fusaihanabi.github.io/tiny-ja-date/) |
+| [tiny-ja-money](https://github.com/fusaihanabi/tiny-ja-money) | 円単位の金額を読み取り・整形し、消費税や按分を計算 | [ライブデモ](https://fusaihanabi.github.io/tiny-ja-money/) |
+| [ja-zengin-utils](https://github.com/fusaihanabi/ja-zengin-utils) | 全銀カナと総合振込の120バイト固定長ファイルを処理 | [ライブデモ](https://fusaihanabi.github.io/ja-zengin-utils/) |
+
+[Fusai Hanabi OSS 公式サイト](https://dl.fusai-hanabi.com/)
+
 ## リリース確認
 
 GitHub Actions では、Windows と Ubuntu で Node.js 22・24・26 を検証します。[Release checks](.github/workflows/check.yml)
@@ -529,11 +549,9 @@ npm publish --dry-run --offline
 
 ---
 
-## What this library does not do
+## 対象範囲
 
-This library intentionally does not validate Japanese phone numbers, postal codes, addresses, or names.
-
-It only normalizes common input variations before validation or storage.
+このライブラリは、電話番号、郵便番号、住所、氏名などの入力に含まれる表記ゆれを、検証や保存の前に整えます。電話番号や郵便番号などの形式を検証するには、正規化後の値を [ja-form-validators](https://github.com/fusaihanabi/ja-form-validators) に渡せます。
 
 ## License
 
